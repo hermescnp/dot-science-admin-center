@@ -1,12 +1,18 @@
-import { auth } from '@clerk/nextjs/server';
+import { getAdminSession } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 
-export default async function Page() {
-  const { userId } = await auth();
+export default async function Page({
+  searchParams
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { user, isAdmin } = await getAdminSession();
 
-  if (!userId) {
-    return redirect('/auth/sign-in');
-  } else {
-    redirect('/dashboard/overview');
+  if (!user) {
+    // The shared auth callback reports failures as `/?error=...`.
+    const { error } = await searchParams;
+    redirect(error ? `/auth/sign-in?error=${encodeURIComponent(error)}` : '/auth/sign-in');
   }
+  if (!isAdmin) redirect('/auth/forbidden');
+  redirect('/dashboard/overview');
 }

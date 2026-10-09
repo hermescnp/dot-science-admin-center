@@ -1,9 +1,14 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
 // Define the base Next.js configuration
 const baseConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  turbopack: {
+    // Parent dir so linked ../dot-science-ai/packages resolve.
+    root: path.resolve(__dirname, '..')
+  },
   images: {
     remotePatterns: [
       {
@@ -13,17 +18,12 @@ const baseConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'img.clerk.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'clerk.com',
+        hostname: 'lh3.googleusercontent.com',
         port: ''
       }
     ]
   },
-  transpilePackages: ['geist'],
+  transpilePackages: ['geist', '@hermescnp/supabase', '@hermescnp/auth', '@hermescnp/workspace-sdk'],
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
   }

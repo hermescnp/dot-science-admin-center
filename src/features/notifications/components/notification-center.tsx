@@ -3,7 +3,12 @@
 import { Icons } from '@/components/icons';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import {
+  headerBadgeClassName,
+  headerIconButtonClassName
+} from '@/components/layout/header-icon-button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { NotificationCard } from '@/components/ui/notification-card';
@@ -13,9 +18,8 @@ import { useRouter } from 'next/navigation';
 const MAX_VISIBLE = 5;
 
 const actionRoutes: Record<string, string> = {
-  view: '/dashboard/workspaces',
-  'view-product': '/dashboard/product',
-  billing: '/dashboard/billing',
+  view: '/dashboard/overview',
+  'view-features': '/dashboard/features',
   open: '/dashboard/kanban',
   'open-chat': '/dashboard/chat'
 };
@@ -28,15 +32,29 @@ export function NotificationCenter() {
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant='ghost' size='icon' className='relative h-8 w-8' />}>
-        <Icons.notification className='h-4 w-4' />
-        {count > 0 && (
-          <span className='bg-destructive text-destructive-foreground absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium'>
-            {count > 9 ? '9+' : count}
-          </span>
-        )}
-        <span className='sr-only'>Notifications</span>
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <button
+                  type='button'
+                  aria-label='Notifications'
+                  className={headerIconButtonClassName()}
+                />
+              }
+            />
+          }
+        >
+          <Icons.notification stroke={1.5} />
+          {count > 0 && (
+            <span aria-hidden className={headerBadgeClassName}>
+              {count > 9 ? '9+' : count}
+            </span>
+          )}
+        </TooltipTrigger>
+        <TooltipContent side='bottom'>Notifications</TooltipContent>
+      </Tooltip>
       <PopoverContent align='end' className='w-[calc(100vw-2rem)] p-0 sm:w-[380px]' sideOffset={8}>
         <div className='flex items-center justify-between px-4 pt-3'>
           <Link href='/dashboard/notifications' className='group flex items-center gap-1'>

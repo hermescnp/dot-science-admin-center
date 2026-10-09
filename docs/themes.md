@@ -453,7 +453,7 @@ All themes automatically support scaled variants. When a user selects "Theme Nam
 ### Theme Not Appearing
 
 - Check that the file is imported in `src/styles/theme.css`
-- Verify the theme name matches in both CSS file and theme-selector.tsx
+- Verify the theme name matches in both the CSS file and `theme.config.ts`
 - Ensure the file is saved and the dev server has reloaded
 
 ### Colors Not Applying
@@ -589,7 +589,7 @@ export const fontVariables = cn(
 
 - **Complete theme example**: `src/styles/themes/claude.css`
 - **Theme aggregator**: `src/styles/theme.css`
-- **Theme selector component**: `src/components/themes/theme-selector.tsx`
+- **Theme selector** (in the header user menu): `src/components/layout/user-nav.tsx`
 - **Theme provider**: `src/components/themes/active-theme.tsx`
 - **Theme configuration** (includes default theme): `src/components/themes/theme.config.ts`
 - **Font configuration**: `src/components/themes/font.config.ts`

@@ -13,6 +13,7 @@ import {
   Playfair_Display,
   Noto_Sans_Mono,
   Outfit,
+  Quicksand,
   Source_Code_Pro,
   Space_Mono
 } from 'next/font/google';
@@ -102,6 +103,17 @@ const fontPlayfairDisplay = Playfair_Display({
   variable: '--font-playfair-display'
 });
 
+const fontQuicksand = Quicksand({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-quicksand'
+});
+
+const fontGeistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono'
+});
+
 export const fontVariables = cn(
   fontSans.variable,
   fontMono.variable,
@@ -118,5 +130,7 @@ export const fontVariables = cn(
   fontSpaceMono.variable,
   fontJetBrainsMono.variable,
   fontMerriweather.variable,
-  fontPlayfairDisplay.variable
+  fontPlayfairDisplay.variable,
+  fontQuicksand.variable,
+  fontGeistMono.variable
 );

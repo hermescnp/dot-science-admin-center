@@ -1,7 +1,12 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  turbopack: {
+    // Parent dir so linked ../dot-science-ai/packages resolve.
+    root: path.resolve(__dirname, '..')
+  },
   images: {
     remotePatterns: [
       {
@@ -11,17 +16,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'img.clerk.com',
-        port: ''
-      },
-      {
-        protocol: 'https',
-        hostname: 'clerk.com',
+        hostname: 'lh3.googleusercontent.com',
         port: ''
       }
     ]
   },
-  transpilePackages: ['geist'],
+  transpilePackages: ['geist', '@hermescnp/supabase', '@hermescnp/auth', '@hermescnp/workspace-sdk'],
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
   }

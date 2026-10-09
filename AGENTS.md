@@ -271,9 +271,10 @@ NEXT_PUBLIC_SENTRY_DISABLED="false"  # Set to "true" to disable in dev
 
 ## Theming System
 
-The project uses a sophisticated multi-theme system with 10 built-in themes:
+The project uses a sophisticated multi-theme system with 11 built-in themes:
 
-- `vercel` (default)
+- `dot-science` (default) — matches the Golden Papers studio look
+- `vercel`
 - `claude`
 - `discord`
 - `supabase`

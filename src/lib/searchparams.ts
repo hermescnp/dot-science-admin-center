@@ -4,7 +4,6 @@ import {
   parseAsInteger,
   parseAsString
 } from 'nuqs/server';
-
 export const searchParams = {
   page: parseAsInteger.withDefault(1),
   perPage: parseAsInteger.withDefault(10),
