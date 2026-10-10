@@ -9,6 +9,7 @@ import { deleteBillingPlanMutation } from '../api/mutations';
 import { billingPlansQueryOptions } from '../api/queries';
 import type { BillingPlan } from '../api/types';
 import { BillingPlanCard } from './billing-plan-card';
+import { BillingPlanComparison } from './billing-plan-comparison';
 import { BillingPlanFormDialog } from './billing-plan-form-dialog';
 import { useAverageCompensation } from './use-average-compensation';
 import { useStackBaseline } from './use-stack-baseline';
@@ -48,7 +49,7 @@ export function BillingPlanGrid() {
   }
 
   return (
-    <>
+    <div className='flex flex-col gap-8'>
       <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
         {data.plans.map((plan) => (
           <BillingPlanCard
@@ -62,6 +63,12 @@ export function BillingPlanGrid() {
           />
         ))}
       </div>
+      <BillingPlanComparison
+        plans={data.plans}
+        features={data.features}
+        baseline={baseline}
+        averageCompensation={averageCompensation}
+      />
       {editing ? (
         <BillingPlanFormDialog
           key={editing.id}
@@ -83,6 +90,6 @@ export function BillingPlanGrid() {
         description='The plan and its feature list are removed. This cannot be undone.'
         confirmLabel='Delete'
       />
-    </>
+    </div>
   );
 }

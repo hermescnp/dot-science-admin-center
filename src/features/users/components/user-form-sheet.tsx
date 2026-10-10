@@ -1,9 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FieldGroup } from '@/components/ui/field';
-import { useAppForm } from '@/lib/form';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel
+} from '@/components/ui/field';
 import { LoadingButton } from '@/components/ui/loading-button';
 import {
   Sheet,
@@ -13,151 +20,144 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
-import { Icons } from '@/components/icons';
-import { useMutation } from '@tanstack/react-query';
-import { createUserMutation, updateUserMutation } from '../api/mutations';
-import type { User } from '../api/types';
-import { toast } from 'sonner';
-import { userSchema, type UserFormValues } from '../schemas/user';
-import { ROLE_OPTIONS } from './users-table/options';
+import { Switch } from '@/components/ui/switch';
+import { billingPlansQueryOptions } from '@/features/billing-plans/api/queries';
+import { useAppForm } from '@/lib/form';
+import { updateUserMutation } from '../api/mutations';
+import type { PlatformUser } from '../api/types';
+import { NO_PLAN, userFormSchema, type UserFormValues } from '../schemas/user';
+import { providerLabel } from './users-table/options';
 
-const STATUS_OPTIONS = [
-  { value: 'Active', label: 'Active' },
-  { value: 'Inactive', label: 'Inactive' },
-  { value: 'Invited', label: 'Invited' }
-];
+const dateTimeFormat = new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' });
 
 interface UserFormSheetProps {
-  user?: User;
+  user: PlatformUser;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) {
-  const isEdit = !!user;
+  const { data: billing } = useSuspenseQuery(billingPlansQueryOptions());
+  const planOptions = [
+    { value: NO_PLAN, label: 'No plan' },
+    ...billing.plans.map((plan) => ({ value: plan.id, label: plan.name }))
+  ];
 
-  const createMutation = useMutation({
-    ...createUserMutation,
-    onSuccess: () => {
-      toast.success('User created');
-      onOpenChange(false);
-      form.reset();
-    },
-    onError: () => toast.error("Couldn't create user. Try again.")
-  });
-
-  const updateMutation = useMutation({
+  const mutation = useMutation({
     ...updateUserMutation,
-    onSuccess: () => {
+    onSuccess: (...args) => {
+      updateUserMutation.onSuccess?.(...args);
       toast.success('User updated');
       onOpenChange(false);
     },
-    onError: () => toast.error("Couldn't update user. Try again.")
+    onError: (error) =>
+      toast.error(
+        error.message.includes('403')
+          ? 'That change is not allowed.'
+          : "Couldn't update the user. Try again."
+      )
   });
 
   const form = useAppForm({
     defaultValues: {
-      first_name: user?.first_name ?? '',
-      last_name: user?.last_name ?? '',
-      email: user?.email ?? '',
-      phone: user?.phone ?? '',
-      role: user?.role ?? '',
-      status: user?.status ?? 'Active'
+      displayName: user.displayName ?? '',
+      isPlatformAdmin: user.isPlatformAdmin,
+      billingPlanId: user.billingPlan?.id ?? NO_PLAN
     } as UserFormValues,
     validators: {
-      onSubmit: userSchema
+      onSubmit: userFormSchema
     },
     onSubmit: async ({ value }) => {
-      if (isEdit) {
-        await updateMutation.mutateAsync({ id: user.id, values: value });
-      } else {
-        await createMutation.mutateAsync(value);
-      }
+      await mutation.mutateAsync({
+        id: user.id,
+        values: {
+          displayName: value.displayName.trim(),
+          isPlatformAdmin: value.isPlatformAdmin,
+          billingPlanId: value.billingPlanId === NO_PLAN ? null : value.billingPlanId
+        }
+      });
     }
   });
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className='flex flex-col'>
         <SheetHeader>
-          <SheetTitle>{isEdit ? 'Edit User' : 'New User'}</SheetTitle>
-          <SheetDescription>
-            {isEdit
-              ? 'Update the user details below.'
-              : 'Fill in the details to create a new user.'}
-          </SheetDescription>
+          <SheetTitle>Edit user</SheetTitle>
+          <SheetDescription>{user.email ?? 'No email on record'}</SheetDescription>
         </SheetHeader>
 
         <div className='flex-1 overflow-auto'>
           <form
             id='user-form-sheet'
-            className='space-y-4 p-4 md:p-4'
+            className='space-y-6 p-4'
             onSubmit={(e) => {
               e.preventDefault();
               form.handleSubmit();
             }}
           >
             <FieldGroup>
-              <div className='grid grid-cols-2 gap-4'>
-                <form.AppField
-                  name='first_name'
-                  children={(field) => (
-                    <field.TextField label='First Name' required placeholder='John' />
-                  )}
-                />
-                <form.AppField
-                  name='last_name'
-                  children={(field) => (
-                    <field.TextField label='Last Name' required placeholder='Doe' />
-                  )}
-                />
-              </div>
-
               <form.AppField
-                name='email'
+                name='displayName'
+                children={(field) => <field.TextField label='Display name' required />}
+              />
+
+              <form.Field
+                name='isPlatformAdmin'
                 children={(field) => (
-                  <field.TextField
-                    label='Email'
-                    required
-                    type='email'
-                    placeholder='john@example.com'
-                  />
+                  <Field orientation='horizontal'>
+                    <FieldContent>
+                      <FieldLabel htmlFor={field.name}>Platform admin</FieldLabel>
+                      <FieldDescription>
+                        {user.isSelf
+                          ? "You can't change your own admin access."
+                          : 'Grants access to this admin center.'}
+                      </FieldDescription>
+                    </FieldContent>
+                    <Switch
+                      id={field.name}
+                      checked={field.state.value}
+                      onCheckedChange={field.handleChange}
+                      disabled={user.isSelf}
+                    />
+                  </Field>
                 )}
               />
 
               <form.AppField
-                name='phone'
+                name='billingPlanId'
                 children={(field) => (
-                  <field.TextField label='Phone' required type='tel' placeholder='(555) 123-4567' />
-                )}
-              />
-
-              <form.AppField
-                name='role'
-                children={(field) => (
-                  <field.SelectField
-                    label='Role'
-                    required
-                    options={ROLE_OPTIONS}
-                    placeholder='Select role'
-                  />
-                )}
-              />
-
-              <form.AppField
-                name='status'
-                children={(field) => (
-                  <field.SelectField
-                    label='Status'
-                    required
-                    options={STATUS_OPTIONS}
-                    placeholder='Select status'
-                  />
+                  <field.SelectField label='Billing plan' options={planOptions} />
                 )}
               />
             </FieldGroup>
+
+            <dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-lg border p-4 text-sm'>
+              <dt className='text-muted-foreground'>Sign-in</dt>
+              <dd className='flex flex-wrap gap-1'>
+                {user.providers.length
+                  ? user.providers.map((provider) => (
+                      <Badge key={provider} variant='secondary'>
+                        {providerLabel(provider)}
+                      </Badge>
+                    ))
+                  : '—'}
+              </dd>
+              <dt className='text-muted-foreground'>Email</dt>
+              <dd>{user.emailVerified ? 'Verified' : 'Not verified'}</dd>
+              <dt className='text-muted-foreground'>Last seen</dt>
+              <dd>
+                {user.lastSeenAt ? dateTimeFormat.format(new Date(user.lastSeenAt)) : 'Never'}
+              </dd>
+              <dt className='text-muted-foreground'>Last sign-in</dt>
+              <dd>
+                {user.lastSignInAt ? dateTimeFormat.format(new Date(user.lastSignInAt)) : 'Never'}
+              </dd>
+              <dt className='text-muted-foreground'>Joined</dt>
+              <dd>{dateTimeFormat.format(new Date(user.createdAt))}</dd>
+              <dt className='text-muted-foreground'>Locale</dt>
+              <dd>{user.locale}</dd>
+            </dl>
           </form>
         </div>
 
@@ -165,24 +165,11 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
           <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <LoadingButton loading={isPending} type='submit' form='user-form-sheet'>
-            {isEdit ? 'Update User' : 'Create User'}
+          <LoadingButton loading={mutation.isPending} type='submit' form='user-form-sheet'>
+            Save changes
           </LoadingButton>
         </SheetFooter>
       </SheetContent>
     </Sheet>
-  );
-}
-
-export function UserFormSheetTrigger() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <Button onClick={() => setOpen(true)}>
-        <Icons.add className='mr-2 h-4 w-4' /> Add User
-      </Button>
-      <UserFormSheet open={open} onOpenChange={setOpen} />
-    </>
   );
 }

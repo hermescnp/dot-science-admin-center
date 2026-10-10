@@ -1,33 +1,30 @@
-// ============================================================
-// Route Handler — Single User (update + delete)
-// ============================================================
-// See src/app/api/users/route.ts for pattern documentation.
-// ============================================================
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { userUpdateSchema } from '@/features/users/schemas/user';
+import { UserForbiddenError, updateUser } from '@/features/users/server/users';
+import { getSupabaseServerClient, requireAdmin } from '@/lib/auth-server';
 
-import { fakeUsers } from '@/constants/mock-api-users';
-import { NextRequest, NextResponse } from 'next/server';
+type RouteContext = { params: Promise<{ id: string }> };
 
-type Params = { params: Promise<{ id: string }> };
+const idSchema = z.uuid();
 
-export async function PUT(request: NextRequest, { params }: Params) {
-  const { id } = await params;
-  const body = await request.json();
-  const data = await fakeUsers.updateUser(Number(id), body);
+export async function PATCH(request: Request, { params }: RouteContext) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
-  if (!data.success) {
-    return NextResponse.json(data, { status: 404 });
+  const id = idSchema.safeParse((await params).id);
+  const parsed = userUpdateSchema.safeParse(await request.json().catch(() => null));
+  if (!id.success || !parsed.success) {
+    return NextResponse.json({ error: 'Invalid user' }, { status: 400 });
   }
 
-  return NextResponse.json(data);
-}
-
-export async function DELETE(request: NextRequest, { params }: Params) {
-  const { id } = await params;
-  const data = await fakeUsers.deleteUser(Number(id));
-
-  if (!data.success) {
-    return NextResponse.json(data, { status: 404 });
+  const supabase = await getSupabaseServerClient();
+  try {
+    const user = await updateUser(supabase, id.data, parsed.data);
+    if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json(user);
+  } catch (error) {
+    const status = error instanceof UserForbiddenError ? 403 : 500;
+    return NextResponse.json({ error: (error as Error).message }, { status });
   }
-
-  return NextResponse.json(data);
 }

@@ -2,7 +2,10 @@ import 'server-only';
 
 import type { Database } from '@hermescnp/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { PlatformFeatureSection } from '@/features/platform-features/api/types';
+import type {
+  PlatformFeatureSection,
+  PlatformFeatureStatus
+} from '@/features/platform-features/api/types';
 import type {
   BillingPlan,
   BillingPlanMutationPayload,
@@ -101,7 +104,7 @@ export async function listBillingPlans(supabase: Client): Promise<BillingPlansRe
     supabase.from('billing_plans').select(COLUMNS).order('position').order('monthly_price'),
     supabase
       .from('platform_features')
-      .select('id, platform_id, section, name, icon, services')
+      .select('id, platform_id, section, name, description, status, icon, services')
       .order('platform_id')
       .order('section')
       .order('position')
@@ -115,6 +118,8 @@ export async function listBillingPlans(supabase: Client): Promise<BillingPlansRe
       platformId: row.platform_id,
       section: row.section as PlatformFeatureSection,
       name: row.name,
+      description: row.description,
+      status: row.status as PlatformFeatureStatus,
       icon: row.icon,
       services: row.services
     }))

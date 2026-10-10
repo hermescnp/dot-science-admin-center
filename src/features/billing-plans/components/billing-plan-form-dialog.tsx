@@ -403,7 +403,9 @@ export function BillingPlanFormDialogTrigger() {
       <Button onClick={() => setOpen(true)}>
         <Icons.add className='mr-2 h-4 w-4' /> Add plan
       </Button>
-      <BillingPlanFormDialog open={open} onOpenChange={setOpen} />
+      {/* Mounted only while open: its queries must not register in the cache during SSR,
+          or HydrationBoundary defers hydrating the prefetched plans and the grid refetches. */}
+      {open ? <BillingPlanFormDialog open onOpenChange={setOpen} /> : null}
     </>
   );
 }

@@ -1,4 +1,7 @@
-import type { PlatformFeatureSection } from '@/features/platform-features/api/types';
+import type {
+  PlatformFeatureSection,
+  PlatformFeatureStatus
+} from '@/features/platform-features/api/types';
 import type { PlanLimitValues } from '../constants/limits';
 
 export type BillingPlanStatus = 'draft' | 'active' | 'archived';
@@ -38,6 +41,8 @@ export interface BillingFeatureOption {
   platformId: string;
   section: PlatformFeatureSection;
   name: string;
+  description: string;
+  status: PlatformFeatureStatus;
   icon: string;
   services: string[];
 }

@@ -1,40 +1,58 @@
 'use client';
 
-import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { KanbanColumn, KanbanColumnHandle } from '@/components/ui/kanban';
-import type { Task } from '../utils/store';
-import { TaskCard } from './task-card';
+import { KanbanColumn } from '@/components/ui/kanban';
+import type {
+  PlatformFeature,
+  PlatformFeatureStatus
+} from '@/features/platform-features/api/types';
+import { platformFeatureStatusesByValue } from '@/features/platform-features/constants/options';
+import { cn } from '@/lib/utils';
+import { FeatureCard, type SubtaskProgress } from './task-card';
 
-const COLUMN_TITLES: Record<string, string> = {
-  backlog: 'Backlog',
-  inProgress: 'In Progress',
-  review: 'Review',
-  done: 'Done'
-};
-
-interface TaskColumnProps extends Omit<React.ComponentProps<typeof KanbanColumn>, 'children'> {
-  tasks: Task[];
+interface StatusColumnProps {
+  value: PlatformFeatureStatus;
+  features: PlatformFeature[];
+  progressByFeature: Map<string, SubtaskProgress>;
+  onOpenFeature: (id: string) => void;
 }
 
-export function TaskColumn({ value, tasks, ...props }: TaskColumnProps) {
+export function StatusColumn({
+  value,
+  features,
+  progressByFeature,
+  onOpenFeature
+}: StatusColumnProps) {
+  const status = platformFeatureStatusesByValue.get(value);
+  const StatusIcon = status?.icon;
+
   return (
-    <KanbanColumn value={value} className='w-full shrink-0 md:w-[320px]' {...props}>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2'>
-          <span className='text-sm font-semibold'>{COLUMN_TITLES[value] ?? value}</span>
-          <Badge variant='secondary' className='pointer-events-none rounded-sm'>
-            {tasks.length}
-          </Badge>
-        </div>
-        <KanbanColumnHandle render={<Button variant='ghost' size='icon' />}>
-          <Icons.gripVertical className='h-4 w-4' />
-        </KanbanColumnHandle>
+    <KanbanColumn value={value} className='w-full shrink-0 md:w-[320px]'>
+      <div className='flex items-center gap-2'>
+        {StatusIcon ? (
+          <span
+            className={cn(
+              'flex size-6 items-center justify-center rounded-md border',
+              status.className
+            )}
+          >
+            <StatusIcon className='size-3.5' />
+          </span>
+        ) : null}
+        <span className='text-sm font-semibold'>{status?.label ?? value}</span>
+        <Badge variant='secondary' className='pointer-events-none rounded-sm'>
+          {features.length}
+        </Badge>
       </div>
-      <div className='flex flex-col gap-2 p-0.5'>
-        {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} asHandle />
+      <div className='flex min-h-16 flex-col gap-2 p-0.5'>
+        {features.map((feature) => (
+          <FeatureCard
+            key={feature.id}
+            feature={feature}
+            progress={progressByFeature.get(feature.id)}
+            onOpen={() => onOpenFeature(feature.id)}
+            asHandle
+          />
         ))}
       </div>
     </KanbanColumn>

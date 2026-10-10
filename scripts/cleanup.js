@@ -363,8 +363,8 @@ class FeatureCleanup {
   // the feature files still exist on disk, so survivors are computed as
   // "files not scheduled for deletion by the selected features".
   cleanConditionalDeps() {
-    // zustand: chat/kanban/notifications stores · motion: chat + the
-    // examples multi-step form · uuid: kanban store
+    // zustand: chat/notifications stores · motion: chat + the examples
+    // multi-step form · uuid: no importers left, so any cleanup drops it
     const CONDITIONAL_DEPS = ['zustand', 'motion', 'uuid'];
 
     const pkgPath = path.join(ROOT, 'package.json');

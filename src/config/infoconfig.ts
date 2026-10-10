@@ -78,6 +78,30 @@ export const agentsInfoContent: InfobarContent = {
   ]
 };
 
+export const kanbanInfoContent: InfobarContent = {
+  title: 'Kanban',
+  sections: [
+    {
+      title: 'Overview',
+      description:
+        'Every platform feature as a task, grouped by development status: Planned, Designed, Under development and Developed. Use the platform filter to focus on one platform.',
+      links: []
+    },
+    {
+      title: 'Moving features',
+      description:
+        "Drag a card to another column to change the feature's status. The change is saved to the same records as the Features page; the order inside a column isn't saved.",
+      links: []
+    },
+    {
+      title: 'Subtasks',
+      description:
+        'Open a card with its checklist button to add, check off or delete subtasks. The card shows how many are done. "Edit feature" opens the same form as the Features page.',
+      links: []
+    }
+  ]
+};
+
 export const maintenanceInfoContent: InfobarContent = {
   title: 'Maintenance',
   sections: [
@@ -136,9 +160,45 @@ export const billingPlansInfoContent: InfobarContent = {
       links: []
     },
     {
+      title: 'Compare plans',
+      description:
+        'The table below the cards puts every plan side by side: prices, cost per subscriber and margin, each limit, and the features included per platform. Click a platform row to see each feature.',
+      links: []
+    },
+    {
       title: 'Other limits',
       description:
         "Limits without a maintenance cost, like projects or seats, show on the plan card but don't change its cost.",
+      links: []
+    }
+  ]
+};
+
+export const leadsInfoContent: InfobarContent = {
+  title: 'Leads',
+  sections: [
+    {
+      title: 'Where leads come from',
+      description:
+        'Every person who takes part in an IAteneo session without an account becomes a lead, captured automatically the moment they enter. People who join on their own show as "Joined as guest"; people the host invited show as "Invited by email". One lead per email, so taking part in more sessions only updates it.',
+      links: []
+    },
+    {
+      title: 'Verified emails',
+      description:
+        'The icon next to each email tells whether the address is real. Verified: the person opened the invitation link, which only arrives in that inbox. Invitation sent: invited but the link was not opened yet. Invitation failed: the email could not be delivered. Unverified: typed when joining as a guest, so it may not exist. Filter by these from the Email status filter.',
+      links: []
+    },
+    {
+      title: 'Pipeline',
+      description:
+        'Move each lead through New, Contacted, Qualified and Converted, or mark it Discarded, and keep notes on the conversation. New sessions never reset the status or the notes.',
+      links: []
+    },
+    {
+      title: 'Leads become users',
+      description:
+        'As soon as an email has an account it stops being a lead and only appears on the Users page. Its status and notes are kept in case the account is removed later.',
       links: []
     }
   ]
