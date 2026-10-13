@@ -56,8 +56,11 @@ const DOC_RULES = {
     { file: 'AGENTS.md', lines: ['── chat', '# Remove messaging UI'] }
   ],
   'ai-chat': [
-    { file: 'README.md', lines: ['| [AI Chat](', '── ai-chat'] },
-    { file: 'AGENTS.md', lines: ['── ai-chat', '# Remove AI chat demo'] }
+    { file: 'README.md', lines: ['| [AI Chat](', '── ai-chat', '── research-development'] },
+    {
+      file: 'AGENTS.md',
+      lines: ['── ai-chat', '── research-development', '# Remove AI chat demo']
+    }
   ],
   notifications: [
     { file: 'README.md', lines: ['| [Notifications](', '── notifications'] },
@@ -97,17 +100,21 @@ const FEATURES = {
   },
   chat: {
     name: 'Chat (Messaging UI)',
-    folders: ['src/app/dashboard/chat', 'src/features/chat'],
+    folders: [
+      'src/app/dashboard/chat',
+      'src/app/dashboard/departments/wisdom-table',
+      'src/features/chat'
+    ],
     files: ['src/components/ui/file-preview.tsx'],
     dependencies: [],
-    navItemsToRemove: ['/dashboard/chat']
+    navItemsToRemove: ['/dashboard/chat', '/dashboard/departments/wisdom-table']
   },
   'ai-chat': {
     name: 'AI Chat (scripted useChat streaming demo)',
-    folders: ['src/app/dashboard/ai-chat', 'src/features/ai-chat'],
+    folders: ['src/app/dashboard/departments/research-development', 'src/features/ai-chat'],
     files: [],
     dependencies: ['ai', '@ai-sdk/react', '@shadcn/helpers'],
-    navItemsToRemove: ['/dashboard/ai-chat']
+    navItemsToRemove: ['/dashboard/departments/research-development']
   },
   notifications: {
     name: 'Notifications (Notification center & page)',

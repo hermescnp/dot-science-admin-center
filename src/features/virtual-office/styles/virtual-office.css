@@ -1,0 +1,266 @@
+/*
+ * Rules are scoped with :where() so they add no specificity: hermes component rules
+ * must keep winning over these element rules exactly as they did on the standalone site.
+ */
+.virtual-office {
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  font-weight: 100;
+  line-height: 1.4;
+  background-color: #1e2332;
+  color: white;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.virtual-office-header {
+  position: relative;
+  width: min(400px, 40vw);
+  height: 40px;
+  color: var(--foreground);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.virtual-office--custom-cursor,
+.virtual-office--custom-cursor * {
+  cursor: none !important;
+}
+
+:where(.virtual-office, .virtual-office-header) .sideBar {
+  position: absolute;
+  background-color: rgba(18, 23, 34, 0.5);
+  backdrop-filter: blur(10px);
+  width: 400px;
+  height: 100%;
+  margin-top: 65px;
+  padding-top: 10px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  grid-template-columns: 400px;
+  top: 0;
+  right: 0;
+  z-index: 11;
+  transition: transform 0.5s ease;
+  box-sizing: border-box;
+  overflow: hidden;
+  box-shadow: inset 0px 8px 8px -8px rgba(0, 0, 0, 0.5);
+}
+
+:where(.virtual-office, .virtual-office-header) .sideBar.vo-hidden {
+  transform: translateX(100%);
+}
+
+:where(.virtual-office, .virtual-office-header) .panelWrapper {
+  height: calc(100% - 100px);
+}
+
+:where(.virtual-office, .virtual-office-header) canvas {
+  margin: 0;
+  padding: 0;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+:where(.virtual-office, .virtual-office-header) h1 {
+  font-weight: 400;
+  font-size: 28px;
+  margin: 0px;
+}
+
+:where(.virtual-office, .virtual-office-header) h2 {
+  font-weight: 300;
+  font-size: 20px;
+  margin: 0px;
+}
+
+:where(.virtual-office, .virtual-office-header) h4 {
+  font-weight: 300;
+  font-size: 16px;
+  margin: 0px;
+}
+
+:where(.virtual-office, .virtual-office-header) strong {
+  font-weight: 500;
+  padding: 3px 0px;
+  overflow: hidden;
+}
+
+:where(.virtual-office, .virtual-office-header) p {
+  margin: 0px;
+  font-size: 14px;
+}
+
+:where(.virtual-office, .virtual-office-header) picture {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  height: auto;
+}
+
+:where(.virtual-office, .virtual-office-header) .vo-hidden {
+  pointer-events: none;
+}
+
+:where(.virtual-office, .virtual-office-header) ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+:where(.virtual-office, .virtual-office-header) li {
+  list-style: none;
+}
+
+:where(.virtual-office, .virtual-office-header) details > summary::-webkit-details-marker {
+  display: none;
+}
+
+:where(.virtual-office, .virtual-office-header) details {
+  overflow: hidden;
+}
+
+:where(.virtual-office, .virtual-office-header) details[open] .content {
+  opacity: 1;
+  max-height: 100vh;
+  transition:
+    opacity 0.5s,
+    max-height 0.5s;
+}
+
+:where(.virtual-office, .virtual-office-header) .details .content {
+  opacity: 0;
+  max-height: 0;
+  transition:
+    opacity 0.5s,
+    max-height 0.5s;
+}
+
+:where(.virtual-office, .virtual-office-header) .Icon {
+  width: 50%;
+  height: 50%;
+}
+
+:where(.virtual-office, .virtual-office-header) .icon-disabled {
+  opacity: 0.3;
+}
+
+:where(.virtual-office, .virtual-office-header) .IconSmall {
+  width: 70%;
+}
+
+:where(.virtual-office, .virtual-office-header) .Clear {
+  clear: right;
+}
+
+:where(.virtual-office) button {
+  background-color: transparent;
+  color: white;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  padding: 0px;
+  margin: 0px;
+}
+
+:where(.virtual-office) a {
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  text-decoration: none;
+}
+
+:where(.virtual-office, .virtual-office-header) .Toggle {
+  width: 45%;
+  height: 50px;
+}
+
+:where(.virtual-office, .virtual-office-header) .SeeMore {
+  transition: all 0.3s ease;
+  transform: rotate(270deg);
+  align-items: flex-start;
+  overflow: hidden;
+  opacity: 0.5;
+  width: 20px;
+  height: 20px;
+}
+
+:where(.virtual-office, .virtual-office-header) .SeeMore:hover {
+  opacity: 1;
+}
+
+:where(.virtual-office, .virtual-office-header) .SeeLess {
+  transform: rotate(90deg);
+  transition: all 0.3s ease;
+  width: 20px;
+  height: 20px;
+}
+
+:where(.virtual-office, .virtual-office-header) summary {
+  list-style: none;
+  outline: none;
+  padding: 20px;
+  border-top: solid;
+  border-color: white;
+  cursor: default;
+}
+
+:where(.virtual-office, .virtual-office-header) .Disapear {
+  opacity: 0;
+}
+
+:where(.virtual-office, .virtual-office-header) .inflatedOuter {
+  width: 90px;
+  height: 90px;
+}
+
+:where(.virtual-office, .virtual-office-header) .inflatedInner {
+  background: #374c6c;
+}
+
+:where(.virtual-office, .virtual-office-header) ::-webkit-scrollbar {
+  width: 0em;
+}
+
+:where(.virtual-office, .virtual-office-header) ::-webkit-scrollbar-track {
+  background-color: black;
+}
+
+:where(.virtual-office, .virtual-office-header) ::-webkit-scrollbar-thumb {
+  background-color: black;
+}
+
+@media screen and (orientation: portrait) {
+  :where(.virtual-office, .virtual-office-header) .sideBar {
+    width: 100%;
+    grid-template-columns: 100%;
+  }
+
+  :where(.virtual-office, .virtual-office-header) .Background {
+    width: 100%;
+  }
+
+  :where(.virtual-office, .virtual-office-header) #Panel {
+    width: 100%;
+    transition: transform 1.5s ease;
+  }
+
+  :where(.virtual-office, .virtual-office-header) .TagContainer {
+    justify-content: flex-start;
+    grid-column: 2;
+    width: auto;
+  }
+
+  :where(.virtual-office, .virtual-office-header) .FooterInfo {
+    display: none;
+  }
+
+  :where(.virtual-office, .virtual-office-header) .TagContainerPartner {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+  }
+}

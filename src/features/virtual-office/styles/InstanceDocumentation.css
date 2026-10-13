@@ -1,0 +1,127 @@
+.DocumentContainer {
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  padding: 16px;
+  width: 100%;
+}
+
+/* General Markdown Styling */
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--popover-foreground);
+  max-width: 800px;
+  margin: auto;
+}
+
+/* Headings */
+.markdown-body h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 15px;
+}
+
+.markdown-body h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin-top: 20px;
+}
+
+.markdown-body h3 {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--primary);
+  margin-top: 15px;
+}
+
+/* Paragraphs */
+.markdown-body p {
+  font-size: 14px;
+  margin: 10px 0;
+  color: var(--muted-foreground);
+}
+
+.markdown-body strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* Lists */
+.markdown-body ul li {
+  background-color: var(--muted);
+  padding: 6px 12px;
+  margin: 6px 0px;
+  border-radius: var(--radius);
+}
+
+/* Links */
+.markdown-body a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+/* Code Blocks */
+.markdown-body pre {
+  background-color: var(--muted);
+  color: var(--foreground);
+  padding: 10px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-size: 14px;
+}
+
+.markdown-body code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  background: var(--muted);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+/* Blockquote */
+.markdown-body blockquote {
+  margin: 10px 0;
+  padding: 10px 15px;
+  border-left: 4px solid var(--primary);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* Tables */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--border);
+  padding: 8px;
+}
+
+.markdown-body th {
+  background-color: var(--muted);
+  font-weight: 600;
+}
+
+/* Images */
+.markdown-body img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  display: block;
+  margin: 20px 0px;
+}

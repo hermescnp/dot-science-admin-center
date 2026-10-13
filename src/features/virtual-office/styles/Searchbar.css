@@ -1,0 +1,114 @@
+.searchbar-results-wrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 40px auto;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  width: 100%;
+  max-height: 450px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  transition: all 0.3s ease;
+}
+
+.searchbar-collapsed {
+  width: 40px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.searchbar-container {
+  display: flex;
+  grid-row: 1;
+  height: 100%;
+  width: 100%;
+}
+
+.searchbar-submit-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 15;
+}
+
+.searchbar-submit-button.inactive {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.InstanceInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 44px 0 14px;
+  border: none;
+  background-color: transparent;
+  color: inherit;
+  font-size: 14px;
+}
+
+.InstanceInput::placeholder {
+  color: var(--muted-foreground);
+}
+
+.InstanceInput:focus {
+  outline: none;
+}
+
+.searchbar-results {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.searchbar-results:not(:empty) {
+  border-top: 1px solid var(--border);
+  padding: 4px;
+}
+
+.searchbar-result-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.searchbar-result-item:hover {
+  background-color: color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.searchbar-result-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.searchbar-result-text p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchbar-result-text p:first-child {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.searchbar-result-text-description {
+  color: var(--muted-foreground);
+}

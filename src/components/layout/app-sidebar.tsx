@@ -18,6 +18,7 @@ import { SidebarPanelToggle } from '@/components/layout/sidebar-panel-toggle';
 import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import type { NavItem } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -60,39 +61,7 @@ export default function AppSidebar() {
               {group.items.map((item) => {
                 const Icon = item.icon ? Icons[item.icon] : Icons.logo;
                 return item?.items && item?.items?.length > 0 ? (
-                  <Collapsible
-                    key={item.title}
-                    defaultOpen={item.isActive}
-                    render={<SidebarMenuItem />}
-                  >
-                    <CollapsibleTrigger
-                      render={
-                        <SidebarMenuButton
-                          tooltip={item.title}
-                          isActive={pathname === item.url}
-                          className='group/collapsible'
-                        />
-                      }
-                    >
-                      {item.icon && <Icon />}
-                      <span>{item.title}</span>
-                      <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-panel-open/collapsible:rotate-90' />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.items?.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              render={<Link href={subItem.url} aria-label={subItem.title} />}
-                              isActive={pathname === subItem.url}
-                            >
-                              <span>{subItem.title}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </Collapsible>
+                  <NavCollapsible key={item.title} item={item} pathname={pathname} />
                 ) : (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -111,5 +80,58 @@ export default function AppSidebar() {
         ))}
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+interface NavCollapsibleProps {
+  item: NavItem;
+  pathname: string;
+}
+
+function NavCollapsible({ item, pathname }: NavCollapsibleProps) {
+  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+  const hasActiveChild = item.items?.some((subItem) => pathname === subItem.url) ?? false;
+  const [open, setOpen] = React.useState(Boolean(item.isActive) || hasActiveChild);
+  const [prevHasActiveChild, setPrevHasActiveChild] = React.useState(hasActiveChild);
+
+  if (hasActiveChild !== prevHasActiveChild) {
+    setPrevHasActiveChild(hasActiveChild);
+    if (hasActiveChild) setOpen(true);
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} render={<SidebarMenuItem />}>
+      <CollapsibleTrigger
+        render={
+          <SidebarMenuButton
+            tooltip={item.title}
+            isActive={pathname === item.url}
+            className='group/collapsible'
+          />
+        }
+      >
+        {item.icon && <Icon />}
+        <span>{item.title}</span>
+        <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-panel-open/collapsible:rotate-90' />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <SidebarMenuSub>
+          {item.items?.map((subItem) => {
+            const SubIcon = subItem.icon ? Icons[subItem.icon] : null;
+            return (
+              <SidebarMenuSubItem key={subItem.title}>
+                <SidebarMenuSubButton
+                  render={<Link href={subItem.url} aria-label={subItem.title} />}
+                  isActive={pathname === subItem.url}
+                >
+                  {SubIcon && <SubIcon />}
+                  <span>{subItem.title}</span>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            );
+          })}
+        </SidebarMenuSub>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

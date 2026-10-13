@@ -88,7 +88,7 @@ The project follows a feature-based folder structure designed for scalability in
 │   │   ├── product/       # Product management pages
 │   │   ├── kanban/        # Kanban board page
 │   │   ├── chat/          # Messaging page
-│   │   ├── ai-chat/       # AI chat streaming demo
+│   │   ├── departments/research-development/ # AI chat streaming demo (R&D)
 │   │   ├── notifications/ # Notifications page
 │   │   ├── workspaces/    # Organization management
 │   │   ├── billing/       # Subscription billing

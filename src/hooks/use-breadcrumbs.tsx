@@ -19,6 +19,24 @@ const routeMapping: Record<string, BreadcrumbItem[]> = {
     { title: 'Dashboard', link: '/dashboard' },
     { title: 'Platforms', link: '/dashboard/platforms' }
   ],
+  ...Object.fromEntries(
+    [
+      ['dot-science-ai', 'Dot Science AI'],
+      ['workspace', 'Workspace'],
+      ['iateneo', 'IAteneo'],
+      ['golden-papers', 'Golden Papers'],
+      ['abstra-space', 'Abstra Space'],
+      ['affine-club', 'Affine Club'],
+      ['admin-center', 'Admin Center']
+    ].map(([id, title]) => [
+      `/dashboard/platforms/${id}`,
+      [
+        { title: 'Dashboard', link: '/dashboard' },
+        { title: 'Platforms', link: '/dashboard/platforms' },
+        { title, link: `/dashboard/platforms/${id}` }
+      ]
+    ])
+  ),
   '/dashboard/features': [
     { title: 'Dashboard', link: '/dashboard' },
     { title: 'Features', link: '/dashboard/features' }

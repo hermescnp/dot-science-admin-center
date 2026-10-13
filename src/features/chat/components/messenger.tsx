@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
-import { useChatStore } from '../utils/store';
+import { useChatStore } from '../utils/chat-store-context';
 import type { Attachment, Message } from '../utils/types';
 import { ConversationList } from './conversation-list';
 import { ConversationSelect } from './conversation-select';

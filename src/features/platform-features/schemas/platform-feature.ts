@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { platformNodesById, serviceNodesById } from '../constants/options';
 
-export const platformFeatureSchema = z.object({
+const featureFields = {
   platformId: z.string().refine((id) => platformNodesById.has(id), 'Select a platform'),
   section: z.enum(['general', 'create', 'agora', 'studio', 'about'], 'Select a section'),
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(80),
@@ -11,6 +11,28 @@ export const platformFeatureSchema = z.object({
     .array(z.string())
     .refine((ids) => ids.every((id) => serviceNodesById.has(id)), 'Unknown service'),
   status: z.enum(['planned', 'designed', 'in_development', 'developed'], 'Select a status')
-});
+};
 
-export type PlatformFeatureFormValues = z.infer<typeof platformFeatureSchema>;
+const datesInOrder = {
+  check: <T extends string | Date>(value: { startDate?: T | null; targetDate?: T | null }) =>
+    !value.startDate || !value.targetDate || value.startDate <= value.targetDate,
+  options: { message: 'Target date must be on or after the start date', path: ['targetDate'] }
+};
+
+export const platformFeatureSchema = z
+  .object({
+    ...featureFields,
+    startDate: z.iso.date().nullable(),
+    targetDate: z.iso.date().nullable()
+  })
+  .refine(datesInOrder.check, datesInOrder.options);
+
+export const platformFeatureFormSchema = z
+  .object({
+    ...featureFields,
+    startDate: z.date().optional(),
+    targetDate: z.date().optional()
+  })
+  .refine(datesInOrder.check, datesInOrder.options);
+
+export type PlatformFeatureFormValues = z.infer<typeof platformFeatureFormSchema>;

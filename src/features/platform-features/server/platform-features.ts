@@ -18,7 +18,7 @@ type PlatformFeatureRow = Omit<
 >;
 
 const COLUMNS =
-  'id, platform_id, section, slug, icon, name, description, services, status, position, updated_at';
+  'id, platform_id, section, slug, icon, name, description, services, status, position, start_date, target_date, updated_at';
 
 const sortColumns: Record<string, keyof PlatformFeatureRow> = {
   platform: 'platform_id',
@@ -41,6 +41,8 @@ function toPlatformFeature(row: PlatformFeatureRow): PlatformFeature {
     services: row.services,
     status: row.status as PlatformFeatureStatus,
     position: row.position,
+    startDate: row.start_date,
+    targetDate: row.target_date,
     updatedAt: row.updated_at
   };
 }
@@ -112,6 +114,17 @@ export async function listFeaturesForPlatform(
   return data.map(toPlatformFeature);
 }
 
+export async function listAllPlatformFeatures(supabase: Client): Promise<PlatformFeature[]> {
+  const { data, error } = await supabase
+    .from('platform_features')
+    .select(COLUMNS)
+    .order('platform_id')
+    .order('position')
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data.map(toPlatformFeature);
+}
+
 export async function createPlatformFeature(
   supabase: Client,
   payload: PlatformFeatureMutationPayload
@@ -137,6 +150,8 @@ export async function createPlatformFeature(
       description: payload.description,
       services: payload.services,
       status: payload.status,
+      start_date: payload.startDate,
+      target_date: payload.targetDate,
       position: last ? last.position + 1 : 0
     })
     .select(COLUMNS)
@@ -162,7 +177,9 @@ export async function updatePlatformFeature(
       name: payload.name,
       description: payload.description,
       services: payload.services,
-      status: payload.status
+      status: payload.status,
+      start_date: payload.startDate,
+      target_date: payload.targetDate
     })
     .eq('id', id)
     .select(COLUMNS)

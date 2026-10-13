@@ -1,0 +1,189 @@
+.navbar-wrapper {
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: 40px 1fr 32px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  width: 100%;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition:
+    height 0.3s ease,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.navbar-wrapper--expanded {
+  height: calc(100svh - 72px);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.NavBar {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  grid-template-rows: 40px;
+  align-items: center;
+  position: relative;
+  grid-row: 1;
+  grid-column: 1;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.Navbar-background {
+  position: relative;
+  grid-row: 1;
+  grid-column: 1;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  transition: background-color 0.2s ease;
+}
+
+.Instance--hovered {
+  background-color: color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.shimmer-background {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--primary) 25%, transparent),
+    transparent
+  );
+  animation: 3s vo-shimmer linear infinite;
+  transition: opacity 1s ease-in-out;
+}
+
+.--on {
+  opacity: 1;
+}
+
+.--off {
+  opacity: 0;
+}
+
+@keyframes vo-shimmer {
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}
+
+#infoPanelContent {
+  grid-row: 2;
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  border-top: 1px solid var(--border);
+}
+
+#hideInfoPanel {
+  grid-row: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+#hideInfoPanel:hover {
+  background: color-mix(in oklab, var(--accent) 50%, transparent);
+  color: var(--foreground);
+}
+
+.InstanceNavigator {
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: 40px 40px 40px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  overflow: visible;
+  transform: translateY(-40px);
+  transition: all 0.2s ease;
+}
+
+.slide-up {
+  transform: translateY(-80px);
+}
+
+.slide-down {
+  transform: translateY(0px);
+}
+
+.no-anim {
+  transition: none !important;
+}
+
+.InstanceNavigator-cell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+}
+
+.NavigationInstance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.InstanceButton {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+
+.PhantomInstance {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--primary);
+}
+
+.ObjectIcon-blinking {
+  color: var(--primary);
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.blink {
+  opacity: 0.4;
+}

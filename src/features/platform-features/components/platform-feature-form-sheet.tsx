@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
+import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
@@ -17,16 +18,31 @@ import {
 } from '@/components/ui/sheet';
 import { useAppForm } from '@/lib/form';
 import { createPlatformFeatureMutation, updatePlatformFeatureMutation } from '../api/mutations';
-import type { PlatformFeature } from '../api/types';
+import type { PlatformFeature, PlatformFeatureMutationPayload } from '../api/types';
 import {
   platformFeatureSections,
   platformOptions,
   serviceOptions,
   statusOptions
 } from '../constants/options';
-import { platformFeatureSchema, type PlatformFeatureFormValues } from '../schemas/platform-feature';
+import {
+  platformFeatureFormSchema,
+  type PlatformFeatureFormValues
+} from '../schemas/platform-feature';
 
 const iconOptions = Object.keys(Icons).map((key) => ({ value: key, label: key }));
+
+function toIsoDate(date: Date | undefined) {
+  return date ? format(date, 'yyyy-MM-dd') : null;
+}
+
+function toPayload(values: PlatformFeatureFormValues): PlatformFeatureMutationPayload {
+  return {
+    ...values,
+    startDate: toIsoDate(values.startDate),
+    targetDate: toIsoDate(values.targetDate)
+  };
+}
 
 function saveErrorMessage(error: Error) {
   return error.message.includes('409')
@@ -76,16 +92,18 @@ export function PlatformFeatureFormSheet({
       description: feature?.description ?? '',
       icon: feature?.icon ?? '',
       services: feature?.services ?? [],
-      status: feature?.status ?? 'planned'
+      status: feature?.status ?? 'planned',
+      startDate: feature?.startDate ? parseISO(feature.startDate) : undefined,
+      targetDate: feature?.targetDate ? parseISO(feature.targetDate) : undefined
     } as PlatformFeatureFormValues,
     validators: {
-      onSubmit: platformFeatureSchema
+      onSubmit: platformFeatureFormSchema
     },
     onSubmit: async ({ value }) => {
       if (isEdit) {
-        await updateMutation.mutateAsync({ id: feature.id, values: value });
+        await updateMutation.mutateAsync({ id: feature.id, values: toPayload(value) });
       } else {
-        await createMutation.mutateAsync(value);
+        await createMutation.mutateAsync(toPayload(value));
       }
     }
   });
@@ -155,6 +173,21 @@ export function PlatformFeatureFormSheet({
                   />
                 )}
               />
+
+              <div className='grid grid-cols-2 gap-4'>
+                <form.AppField
+                  name='startDate'
+                  children={(field) => (
+                    <field.DatePickerField label='Start date' placeholder='Not scheduled' />
+                  )}
+                />
+                <form.AppField
+                  name='targetDate'
+                  children={(field) => (
+                    <field.DatePickerField label='Target date' placeholder='Not scheduled' />
+                  )}
+                />
+              </div>
 
               <form.AppField
                 name='description'

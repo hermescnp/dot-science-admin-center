@@ -25,12 +25,80 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Platforms',
-        url: '/dashboard/platforms',
-        icon: 'apps',
-        shortcut: ['p', 'l'],
+        title: 'Organizational Structure',
+        url: '#',
+        icon: 'hierarchy',
+        isActive: false,
+        items: [
+          {
+            title: 'Hierarchy map',
+            url: '/dashboard/org-structure',
+            icon: 'hierarchy',
+            shortcut: ['o', 's']
+          },
+          {
+            title: 'Design',
+            url: '/dashboard/departments/design',
+            icon: 'whiteboard'
+          },
+          {
+            title: 'Knowledge Management',
+            url: '/dashboard/departments/knowledge-management',
+            icon: 'stars'
+          },
+          {
+            title: 'Public Relations & Events',
+            url: '/dashboard/departments/public-relations-events',
+            icon: 'speakerphone'
+          },
+          {
+            title: 'Strategic Planning',
+            url: '/dashboard/departments/strategic-planning',
+            icon: 'timeline'
+          },
+          {
+            title: 'Research & Development',
+            url: '/dashboard/departments/research-development',
+            icon: 'flask'
+          },
+          {
+            title: 'The Wisdom Table',
+            url: '/dashboard/departments/wisdom-table',
+            icon: 'messages'
+          }
+        ]
+      },
+      {
+        title: 'Virtual Office',
+        url: '/dashboard/virtual-office',
+        icon: 'building',
+        shortcut: ['v', 'o'],
         isActive: false,
         items: []
+      },
+      {
+        title: 'Calendar',
+        url: '/dashboard/calendar',
+        icon: 'calendar',
+        shortcut: ['c', 'l'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Platforms',
+        url: '#',
+        icon: 'apps',
+        isActive: false,
+        items: [
+          { title: 'General', url: '/dashboard/platforms', icon: 'apps', shortcut: ['p', 'l'] },
+          { title: 'Dot Science AI', url: '/dashboard/platforms/dot-science-ai', icon: 'world' },
+          { title: 'Workspace', url: '/dashboard/platforms/workspace', icon: 'workspace' },
+          { title: 'IAteneo', url: '/dashboard/platforms/iateneo', icon: 'brain' },
+          { title: 'Golden Papers', url: '/dashboard/platforms/golden-papers', icon: 'book' },
+          { title: 'Abstra Space', url: '/dashboard/platforms/abstra-space', icon: 'cube' },
+          { title: 'Affine Club', url: '/dashboard/platforms/affine-club', icon: 'compass' },
+          { title: 'Admin Center', url: '/dashboard/platforms/admin-center', icon: 'shieldLock' }
+        ]
       },
       {
         title: 'Features',
@@ -93,14 +161,6 @@ export const navGroups: NavGroup[] = [
         url: '/dashboard/chat',
         icon: 'chat',
         shortcut: ['c', 'c'],
-        isActive: false,
-        items: []
-      },
-      {
-        title: 'AI Chat',
-        url: '/dashboard/ai-chat',
-        icon: 'sparkles',
-        shortcut: ['a', 'i'],
         isActive: false,
         items: []
       }

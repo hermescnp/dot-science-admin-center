@@ -20,7 +20,9 @@ export const moveFeatureMutation = mutationOptions({
       description: feature.description,
       icon: feature.icon,
       services: feature.services,
-      status
+      status,
+      startDate: feature.startDate,
+      targetDate: feature.targetDate
     }),
   onMutate: async ({ feature, status }) => {
     const queryClient = getQueryClient();

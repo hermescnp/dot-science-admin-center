@@ -16,8 +16,8 @@ export function Breadcrumbs() {
   if (items.length === 0) return null;
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    <Breadcrumb className='min-w-0'>
+      <BreadcrumbList className='flex-nowrap overflow-hidden whitespace-nowrap'>
         {items.map((item, index) => (
           <Fragment key={item.title}>
             {index !== items.length - 1 && (
@@ -30,7 +30,9 @@ export function Breadcrumbs() {
                 <Icons.slash />
               </BreadcrumbSeparator>
             )}
-            {index === items.length - 1 && <BreadcrumbPage>{item.title}</BreadcrumbPage>}
+            {index === items.length - 1 && (
+              <BreadcrumbPage className='truncate'>{item.title}</BreadcrumbPage>
+            )}
           </Fragment>
         ))}
       </BreadcrumbList>

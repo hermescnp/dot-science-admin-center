@@ -18,6 +18,10 @@ export interface PlatformFeature {
   services: string[];
   status: PlatformFeatureStatus;
   position: number;
+  /** `yyyy-MM-dd`. */
+  startDate: string | null;
+  /** `yyyy-MM-dd`. */
+  targetDate: string | null;
   updatedAt: string;
 }
 
@@ -44,4 +48,6 @@ export interface PlatformFeatureMutationPayload {
   icon: string;
   services: string[];
   status: PlatformFeatureStatus;
+  startDate: string | null;
+  targetDate: string | null;
 }
