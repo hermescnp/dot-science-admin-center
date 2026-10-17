@@ -2,7 +2,12 @@ import React from 'react';
 import { Breadcrumbs } from '../breadcrumbs';
 import SearchInput from '../search-input';
 import CtaGithub from './cta-github';
-import { HEADER_CENTER_SLOT_ID, HEADER_PAGE_SLOT_ID } from './header-slot';
+import {
+  HEADER_ACTIONS_START_SLOT_ID,
+  HEADER_CENTER_SLOT_ID,
+  HEADER_PAGE_SLOT_ID,
+  HEADER_TITLE_SLOT_ID
+} from './header-slot';
 import { SidebarOpenButton } from './sidebar-panel-toggle';
 import { UserNav } from './user-nav';
 import { NotificationCenter } from '@/features/notifications/components/notification-center';
@@ -16,6 +21,7 @@ export default function Header() {
       <div className='flex min-w-0 flex-1 items-center gap-3 px-4'>
         <SidebarOpenButton />
         <Breadcrumbs />
+        <div id={HEADER_TITLE_SLOT_ID} className='flex shrink-0 items-center empty:hidden' />
       </div>
 
       <div
@@ -24,6 +30,7 @@ export default function Header() {
       />
 
       <div data-slot='header-actions' className='flex items-center gap-2 px-4'>
+        <div id={HEADER_ACTIONS_START_SLOT_ID} className='flex items-center empty:hidden' />
         <CtaGithub />
         <SearchInput />
         <NotificationCenter />

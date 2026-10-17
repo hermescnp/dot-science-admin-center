@@ -34,6 +34,10 @@ export function nodeRadius(n: StarmapNode): number {
     return 4.4;
   }
 
+  if (n.kind === 'concept') {
+    return 5.2;
+  }
+
   const base = n.state === 'archived' || n.state === 'stale' ? 2.4 : 3;
 
   return base + Math.sqrt(Math.max(0, n.useCount)) * 0.55 + (n.pinned ? 0.8 : 0);

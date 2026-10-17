@@ -342,8 +342,83 @@ const MEMORIES: DemoMemory[] = [
   }
 ];
 
+interface DemoConcept {
+  slug: string;
+  label: string;
+  description: string;
+  day: number;
+  skills: string[];
+  /** Indexes into MEMORIES. */
+  memories: number[];
+}
+
+const CONCEPTS: DemoConcept[] = [
+  {
+    slug: 'scientific-rigor',
+    label: 'Scientific rigor',
+    description:
+      'Claims are backed by sources, citations are checked and summaries stay faithful to the paper.',
+    day: 10,
+    skills: ['paper-summary', 'citation-check', 'lit-review'],
+    memories: [4]
+  },
+  {
+    slug: 'data-security',
+    label: 'Data security',
+    description:
+      'Every table is protected by row-level security and access is scoped to platform admins.',
+    day: 19,
+    skills: ['sql-migrations', 'rls-policies'],
+    memories: [2]
+  },
+  {
+    slug: 'team-rhythm',
+    label: 'Team rhythm',
+    description:
+      'Recurring meetings, reports and reminders that keep the team in sync week to week.',
+    day: 15,
+    skills: ['calendar-sync', 'meeting-notes', 'weekly-report'],
+    memories: [3, 6]
+  },
+  {
+    slug: 'brand-consistency',
+    label: 'Brand consistency',
+    description:
+      'Public writing shares one Dot Science voice across blog posts, newsletters and proposals.',
+    day: 31,
+    skills: ['brand-voice', 'blog-draft', 'newsletter'],
+    memories: [1, 10]
+  },
+  {
+    slug: 'code-conventions',
+    label: 'Code conventions',
+    description:
+      'Shared patterns for structuring features, writing commits and reviewing changes across repos.',
+    day: 28,
+    skills: ['git-commit', 'pr-review', 'next-routes'],
+    memories: [0, 5]
+  },
+  {
+    slug: 'data-driven-decisions',
+    label: 'Data-driven decisions',
+    description: 'Metrics, charts and forecasts inform planning instead of intuition alone.',
+    day: 45,
+    skills: ['chart-gen', 'kpi-dashboard', 'billing-forecast'],
+    memories: [7]
+  },
+  {
+    slug: 'visual-thinking',
+    label: 'Visual thinking',
+    description: 'Ideas are sketched as flows and frames before they are built.',
+    day: 58,
+    skills: ['whiteboard-flows', 'figma-export', 'design-tokens'],
+    memories: [9]
+  }
+];
+
 function buildGraph(): StarmapGraph {
   const skillId = (slug: string) => `skill:${slug}`;
+  const memoryId = (index: number) => `memory:${MEMORIES[index]!.source}:${index}`;
 
   const nodes: StarmapNode[] = SKILLS.map((s) => ({
     id: skillId(s.slug),
@@ -372,7 +447,7 @@ function buildGraph(): StarmapGraph {
   }));
 
   MEMORIES.forEach((m, index) => {
-    const id = `memory:${m.source}:${index}`;
+    const id = memoryId(index);
     nodes.push({
       id,
       label: m.title,
@@ -388,6 +463,24 @@ function buildGraph(): StarmapGraph {
     for (const target of m.links) edges.push({ source: id, target: skillId(target) });
   });
 
+  for (const c of CONCEPTS) {
+    const id = `concept:${c.slug}`;
+    nodes.push({
+      id,
+      label: c.label,
+      kind: 'concept',
+      description: c.description,
+      timestamp: at(c.day),
+      category: 'concept',
+      useCount: 0,
+      state: 'active',
+      createdBy: null,
+      pinned: false
+    });
+    for (const target of c.skills) edges.push({ source: id, target: skillId(target) });
+    for (const index of c.memories) edges.push({ source: id, target: memoryId(index) });
+  }
+
   const counts = new Map<string, number>();
   for (const s of SKILLS) counts.set(s.category, (counts.get(s.category) ?? 0) + 1);
 
@@ -399,6 +492,7 @@ function buildGraph(): StarmapGraph {
     stats: {
       skills: SKILLS.length,
       memories: MEMORIES.length,
+      concepts: CONCEPTS.length,
       edges: edges.length
     }
   };

@@ -4,11 +4,13 @@ import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { Icons } from '@/components/icons';
 
+import type { StarmapNode } from '../api/types';
 import type { TimeAxis } from './time-axis';
 
 interface TimelineProps {
   axis: TimeAxis;
-  // Colour for memory stars — matches the map's memory glyph.
+  // Colours for memory and concept stars — match the map's glyphs.
+  conceptColor?: string;
   memoryColor?: string;
   onScrub: (reveal: number) => void;
   onTogglePlay: () => void;
@@ -26,7 +28,7 @@ interface RevealSignal {
 interface Star {
   delay: number;
   duration: number;
-  kind: 'memory' | 'skill';
+  kind: StarmapNode['kind'];
   leftPct: number;
   opacity: number;
   size: number;
@@ -53,7 +55,7 @@ function rng(seed: number): () => number {
 }
 
 // Scatter each time bucket's activity into stars: count ∝ events, split between
-// skill- and memory-coloured stars, jittered within the bucket's horizontal slot
+// skill-, memory- and concept-coloured stars, jittered within the bucket's horizontal slot
 // and across the track height. Vertical placement is biased toward the midline
 // (a triangular distribution) so stars cluster near the centre more often than
 // the edges. A starmap timeline for a starmap.
@@ -71,6 +73,7 @@ function buildStars(axis: TimeAxis): Star[] {
     // every quieter bucket down to the 1-star floor and read as blank.
     const count = Math.max(1, Math.round(Math.sqrt(intensity) * MAX_STARS_PER_BUCKET));
     const skillCount = Math.round((b.skill / b.total) * count);
+    const memoryCount = Math.round(((b.skill + b.memory) / b.total) * count);
     const r = rng(i * 9973 + 7);
     const slot = 1 / n;
     const center = (i + 0.5) / n;
@@ -84,7 +87,7 @@ function buildStars(axis: TimeAxis): Star[] {
       stars.push({
         delay: r() * 3,
         duration: 2.4 + r() * 2.6,
-        kind: s < skillCount ? 'skill' : 'memory',
+        kind: s < skillCount ? 'skill' : s < memoryCount ? 'memory' : 'concept',
         leftPct: Math.max(0, Math.min(1, center + jitter)) * 100,
         // Brighter, slightly larger stars are rarer.
         opacity: 0.5 + r() * 0.5,
@@ -104,6 +107,7 @@ function buildStars(axis: TimeAxis): Star[] {
 // in StarMap drives it with zero per-frame JS.
 export const Timeline = memo(function Timeline({
   axis,
+  conceptColor = 'var(--theme-accent)',
   memoryColor = 'var(--theme-secondary)',
   onScrub,
   onTogglePlay,
@@ -181,7 +185,7 @@ export const Timeline = memo(function Timeline({
   };
 
   const colorFor = (kind: Star['kind']) =>
-    kind === 'skill' ? 'var(--theme-primary)' : memoryColor;
+    kind === 'skill' ? 'var(--theme-primary)' : kind === 'memory' ? memoryColor : conceptColor;
 
   return (
     <div className='pointer-events-auto flex w-[28rem] max-w-full items-center gap-3 [-webkit-app-region:no-drag]'>

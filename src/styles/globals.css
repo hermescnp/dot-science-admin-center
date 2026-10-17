@@ -768,7 +768,102 @@
   border-top: 1px solid var(--border);
 }
 
-.layer-editor .ProseMirror :is(img, hr, [data-type='block-math']).ProseMirror-selectednode {
+.layer-editor .layer-editor-vector-graphic {
+  position: relative;
+}
+
+.layer-editor .layer-editor-vector-graphic figure {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.layer-editor .layer-editor-vector-graphic figure[data-align='left'] {
+  margin-left: 0;
+}
+
+.layer-editor .layer-editor-vector-graphic figure[data-align='right'] {
+  margin-right: 0;
+}
+
+.layer-editor .layer-editor-vector-graphic svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.layer-editor .layer-editor-vector-graphic figure[data-invalid] {
+  padding: 1rem;
+  color: var(--destructive);
+  font-size: 0.875rem;
+}
+
+.layer-editor .layer-editor-vector-graphic-edit {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--background);
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.layer-editor .layer-editor-vector-graphic:hover .layer-editor-vector-graphic-edit,
+.layer-editor .layer-editor-vector-graphic-edit:focus-visible {
+  opacity: 1;
+}
+
+.layer-editor .layer-editor-interactive-graphic {
+  position: relative;
+}
+
+.layer-editor .layer-editor-interactive-graphic figure {
+  width: 100%;
+  margin: 0;
+}
+
+.layer-editor .layer-editor-interactive-graphic iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.layer-editor .layer-editor-interactive-graphic figure[data-invalid] {
+  padding: 1rem;
+  color: var(--destructive);
+  font-size: 0.875rem;
+}
+
+.layer-editor .layer-editor-interactive-graphic-edit {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--background);
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.layer-editor .layer-editor-interactive-graphic:hover .layer-editor-interactive-graphic-edit,
+.layer-editor .layer-editor-interactive-graphic-edit:focus-visible {
+  opacity: 1;
+}
+
+.layer-editor
+  .ProseMirror
+  :is(
+    img,
+    hr,
+    [data-type='block-math'],
+    .layer-editor-vector-graphic,
+    .layer-editor-interactive-graphic
+  ).ProseMirror-selectednode {
   outline: 2px solid color-mix(in oklab, var(--primary) 60%, transparent);
   outline-offset: 2px;
 }
@@ -875,4 +970,455 @@
 
 .layer-markdown .katex {
   font-size: 1.05em;
+}
+
+/* Layout Design's hand mode (Space or middle button), as on the free-design canvas. */
+.react-flow[data-hand='ready'],
+.react-flow[data-hand='ready'] * {
+  cursor: grab !important;
+}
+
+.react-flow[data-hand='panning'],
+.react-flow[data-hand='panning'] * {
+  cursor: grabbing !important;
+}
+
+/* Read-only boards are backdrops: no menu, zoom or footer of their own. */
+.whiteboard .excalidraw--view-mode .layer-ui__wrapper {
+  display: none;
+}
+
+/* Excalidraw's zoom controls, toned down to a quiet translucent pill. */
+.whiteboard .excalidraw .zoom-actions {
+  background-color: color-mix(in oklab, var(--background) 70%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--border) 70%, transparent);
+  border-radius: 0.625rem;
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.whiteboard .excalidraw .zoom-actions .zoom-button {
+  width: 1.875rem;
+  height: 1.875rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  color: var(--muted-foreground);
+  --icon-fill-color: var(--muted-foreground);
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.whiteboard .excalidraw .zoom-actions .zoom-button:hover {
+  background-color: color-mix(in oklab, var(--accent) 50%, transparent) !important;
+  color: var(--foreground);
+  --icon-fill-color: var(--foreground);
+}
+
+.whiteboard .excalidraw .zoom-actions .zoom-button .ToolIcon__icon {
+  background-color: transparent !important;
+}
+
+.whiteboard .excalidraw .zoom-actions .zoom-button svg {
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+}
+
+.whiteboard .excalidraw .zoom-actions .reset-zoom-button {
+  width: 3rem !important;
+  font-size: 0.75rem !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Excalidraw's shape toolbar, docked to the bottom edge as an IAteneo-style session bar. */
+.whiteboard .excalidraw {
+  --wb-bar-bg: color-mix(in oklab, var(--background) 60%, transparent);
+  --wb-bar-line: var(--border);
+  --wb-cell-hover: color-mix(in oklab, var(--accent) 60%, transparent);
+  --wb-cell-active: color-mix(in oklab, #68dbff 12%, var(--background));
+  --wb-glow: radial-gradient(
+    circle 3.5rem at 50% calc(100% + 14px),
+    rgb(104 219 255 / 0.5) 0%,
+    rgb(104 219 255 / 0.28) 18%,
+    rgb(104 219 255 / 0.12) 38%,
+    rgb(104 219 255 / 0.04) 58%,
+    transparent 76%
+  );
+}
+
+.whiteboard .excalidraw.theme--dark {
+  --wb-bar-bg: rgb(0 0 0 / 0.2);
+  --wb-bar-line: rgb(255 255 255 / 0.1);
+  --wb-cell-hover: #0b1e33;
+  --wb-cell-active: #0a1727;
+  --wb-glow: radial-gradient(
+    circle 3.5rem at 50% calc(100% + 14px),
+    rgb(104 219 255 / 0.78) 0%,
+    rgb(104 219 255 / 0.45) 18%,
+    rgb(104 219 255 / 0.2) 38%,
+    rgb(104 219 255 / 0.06) 58%,
+    transparent 76%
+  );
+}
+
+/* Position against FixedSideContainer_side_top (fills the canvas) instead of the top menu. */
+.whiteboard .excalidraw:not(.excalidraw--mobile) .shapes-section > div {
+  position: static !important;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar-container {
+  position: absolute;
+  left: 50%;
+  bottom: calc(-1 * var(--editor-container-padding));
+  transform: translateX(-50%);
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .HintViewer {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 0.5rem;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar__extra-tools-dropdown {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 0.5rem;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar {
+  padding: 0;
+  border: 1px solid var(--wb-bar-line);
+  border-bottom: 0;
+  border-radius: 0.75rem 0.75rem 0 0;
+  background-color: var(--wb-bar-bg);
+  box-shadow: none;
+  backdrop-filter: blur(12px);
+  --icon-fill-color: var(--muted-foreground);
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .Stack {
+  gap: 0 !important;
+}
+
+/* Narrow boards keep the wide-screen bar: its row scrolls, and the zoom pill moves above it. */
+.whiteboard {
+  container: whiteboard / inline-size;
+}
+
+.whiteboard .excalidraw .App-toolbar {
+  max-width: calc(100cqw - 1rem);
+}
+
+.whiteboard .excalidraw .App-toolbar > .Stack {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+@container whiteboard (width < 860px) {
+  .whiteboard .excalidraw .layer-ui__wrapper__footer-left {
+    translate: 0 -3.25rem;
+  }
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .App-toolbar__divider,
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .ToolIcon__keybinding {
+  display: none;
+}
+
+.whiteboard .excalidraw .ToolIcon:is(.ToolIcon__lock, :has([data-testid='toolbar-hand'])) {
+  display: none;
+}
+
+/* The rectangle, diamond and ellipse tools are folded into the host's primitive forms cell. */
+.whiteboard
+  .excalidraw
+  .App-toolbar:has(.App-toolbar__primitives)
+  .ToolIcon:has(
+    :is(
+      [data-testid='toolbar-rectangle'],
+      [data-testid='toolbar-diamond'],
+      [data-testid='toolbar-ellipse']
+    )
+  ) {
+  display: none;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .eraser.active {
+  background-color: transparent;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .ToolIcon_type_button {
+  background-color: transparent !important;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .ToolIcon__icon,
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .App-toolbar__extra-tools-trigger {
+  width: 2.75rem !important;
+  height: 2.5rem !important;
+  padding: 0;
+  border: 0;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: inset 1px 0 0 var(--wb-bar-line) !important;
+  color: var(--muted-foreground);
+  --icon-fill-color: var(--muted-foreground);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .ToolIcon__icon svg,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__extra-tools-trigger
+  svg {
+  width: 1.125rem !important;
+  height: 1.125rem !important;
+  color: inherit;
+}
+
+/* The end cells sit inside the bar's 1px border, so their corners are one pixel tighter. The
+   lock and hand tools before the selection tool are hidden, and host tools trail the row. */
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  > .Stack
+  > .ToolIcon:has([data-testid='toolbar-selection'])
+  .ToolIcon__icon {
+  box-shadow: none !important;
+  border-top-left-radius: calc(0.75rem - 1px) !important;
+}
+
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  > .Stack
+  > .App-toolbar__host-tools
+  > :last-child
+  .ToolIcon__icon,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  > .Stack
+  > :last-child.App-toolbar__extra-tools-trigger {
+  border-top-right-radius: calc(0.75rem - 1px) !important;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-toolbar .ToolIcon:hover .ToolIcon__icon,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .ToolIcon_type_button:hover
+  .ToolIcon__icon,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__extra-tools-trigger:hover {
+  background: var(--wb-cell-hover) !important;
+  color: var(--foreground);
+  --icon-fill-color: var(--foreground);
+}
+
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .ToolIcon_type_radio:checked
+  + .ToolIcon__icon,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .ToolIcon_type_checkbox:checked
+  + .ToolIcon__icon,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__primitives[aria-pressed='true']
+  .ToolIcon__icon,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__ai-frame[aria-pressed='true']
+  .ToolIcon__icon,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__extra-tools-trigger--selected,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__extra-tools-trigger--selected:hover {
+  background: var(--wb-glow), var(--wb-cell-active) !important;
+  color: var(--foreground) !important;
+  --icon-fill-color: var(--foreground);
+}
+
+/* Reusable components open a library rather than pick a tool, so they keep the component violet. */
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__components
+  .ToolIcon__icon {
+  background: oklch(0.6 0.2 293 / 0.1) !important;
+  box-shadow: none !important;
+  color: oklch(0.6 0.2 293);
+  --icon-fill-color: oklch(0.6 0.2 293);
+}
+
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__components:hover
+  .ToolIcon__icon {
+  background: oklch(0.6 0.2 293 / 0.18) !important;
+  color: oklch(0.6 0.2 293);
+  --icon-fill-color: oklch(0.6 0.2 293);
+}
+
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__components[aria-pressed='true']
+  .ToolIcon__icon {
+  background: oklch(0.6 0.2 293 / 0.24) !important;
+  box-shadow: inset 0 0 0 1px oklch(0.6 0.2 293 / 0.6) !important;
+}
+
+/* The AI frame tool (Excalidraw's frame tool, out of "More tools") and its render panel carry an
+   AI-pink accent. */
+:root {
+  --wb-ai: oklch(0.68 0.2 340);
+}
+
+.whiteboard
+  .excalidraw:has(.App-toolbar__ai-frame)
+  .dropdown-menu-item[data-testid='toolbar-frame'] {
+  display: none;
+}
+
+/* The frame tool is an Excalidraw "extra" tool: its menu trigger would light up along with it. */
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar:has(.App-toolbar__ai-frame[aria-pressed='true'])
+  .App-toolbar__extra-tools-trigger--selected:not(:hover) {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .ToolIcon_type_radio:checked
+  + .ToolIcon__icon
+  svg,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .ToolIcon_type_checkbox:checked
+  + .ToolIcon__icon
+  svg,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__primitives[aria-pressed='true']
+  .ToolIcon__icon
+  svg,
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-toolbar
+  .App-toolbar__ai-frame[aria-pressed='true']
+  .ToolIcon__icon
+  svg {
+  color: var(--foreground) !important;
+}
+
+/* Selected-element properties: a floating panel on the right edge, in the project's card style.
+   The doubled class outranks Excalidraw's own `.theme--dark .App-menu__left` variables. */
+.whiteboard .excalidraw:not(.excalidraw--mobile) .Island.App-menu__left {
+  top: 0;
+  right: 0;
+  left: auto;
+  width: 13.5rem;
+  padding: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background-color: color-mix(in oklab, var(--popover) 85%, transparent);
+  box-shadow:
+    0 10px 30px -12px rgb(0 0 0 / 0.35),
+    0 2px 6px rgb(0 0 0 / 0.08);
+  backdrop-filter: blur(12px);
+  color: var(--foreground);
+  scrollbar-width: thin;
+  --default-border-color: var(--border);
+  --text-primary-color: var(--foreground);
+  --icon-fill-color: var(--muted-foreground);
+  --default-button-size: 2rem;
+  --lg-icon-size: 1rem;
+  --border-radius-lg: 0.5rem;
+  --button-bg: transparent;
+  --button-border: var(--border);
+  --button-color: var(--muted-foreground);
+  --button-hover-bg: var(--accent);
+  --button-hover-border: var(--border);
+  --button-hover-color: var(--foreground);
+  --button-selected-bg: color-mix(in oklab, var(--primary) 16%, transparent);
+  --button-selected-border: color-mix(in oklab, var(--primary) 60%, transparent);
+  --button-selected-hover-bg: color-mix(in oklab, var(--primary) 22%, transparent);
+  --button-active-bg: color-mix(in oklab, var(--primary) 16%, transparent);
+  --button-active-border: var(--primary);
+  --color-on-primary-container: var(--foreground);
+  --color-primary-darkest: var(--primary);
+  --color-slider-track: var(--muted);
+  --color-slider-thumb: var(--primary);
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-menu__left .panelColumn {
+  row-gap: 0.875rem;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-menu__left :is(h3, legend, .control-label) {
+  margin-bottom: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-menu__left fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-menu__left .buttonList {
+  gap: 0.375rem;
+  padding: 0;
+}
+
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-menu__left
+  .buttonList
+  :is(label, button, .zIndexButton) {
+  padding: 0.4375rem;
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    color 150ms;
+}
+
+.whiteboard
+  .excalidraw:not(.excalidraw--mobile)
+  .App-menu__left
+  .buttonList
+  :is(label, button, .zIndexButton)
+  svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.whiteboard .excalidraw:not(.excalidraw--mobile) .App-menu__left .color-picker__button {
+  border-color: var(--border);
 }

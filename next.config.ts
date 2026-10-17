@@ -23,7 +23,13 @@ const baseConfig: NextConfig = {
       }
     ]
   },
-  transpilePackages: ['geist', '@hermescnp/supabase', '@hermescnp/auth', '@hermescnp/workspace-sdk'],
+  transpilePackages: [
+    'geist',
+    '@hermescnp/supabase',
+    '@hermescnp/auth',
+    '@hermescnp/workspace-sdk',
+    '@hermescnp/content-blocks'
+  ],
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production'
   }

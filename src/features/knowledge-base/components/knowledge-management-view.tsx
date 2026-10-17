@@ -5,9 +5,8 @@ import { Suspense, type CSSProperties } from 'react';
 import { HeaderPortal } from '@/components/layout/header-portal';
 import { HEADER_CENTER_SLOT_ID } from '@/components/layout/header-slot';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StarmapView } from '@/features/starmap/components/starmap-view';
 import { cn } from '@/lib/utils';
-import { KnowledgeBaseView } from './knowledge-base-view';
+import { KnowledgeWorkspace } from './knowledge-workspace';
 
 const TABS = [
   { id: 'graph', label: 'Knowledge Graph' },
@@ -50,7 +49,10 @@ export function KnowledgeManagementView() {
         </nav>
       </HeaderPortal>
       <Suspense fallback={fullBleedSkeleton}>
-        {tab === 'graph' ? <StarmapView /> : <KnowledgeBaseView />}
+        <KnowledgeWorkspace
+          tab={tab}
+          onTabChange={(next) => void setTab(next === 'graph' ? null : next)}
+        />
       </Suspense>
     </>
   );

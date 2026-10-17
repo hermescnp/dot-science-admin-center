@@ -3,3 +3,4 @@ packages:
   - "../dot-science-ai/packages/supabase"
   - "../dot-science-ai/packages/auth"
   - "../dot-science-ai/packages/workspace-sdk"
+  - "../dot-science-ai/packages/content-blocks"

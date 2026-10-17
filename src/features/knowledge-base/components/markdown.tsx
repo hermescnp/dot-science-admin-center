@@ -1,16 +1,28 @@
 'use client';
 
 import 'katex/dist/katex.min.css';
+import {
+  rehypeBlockIdFromComments,
+  rehypeInteractiveGraphics,
+  rehypeVectorGraphics
+} from '@hermescnp/content-blocks';
 import GithubSlugger from 'github-slugger';
+import type { Element } from 'hast';
 import type { Heading, Root } from 'mdast';
 import { toString } from 'mdast-util-to-string';
 import { createContext, use, type ComponentProps } from 'react';
-import ReactMarkdown, { type Components, type ExtraProps } from 'react-markdown';
+import ReactMarkdown, {
+  defaultUrlTransform,
+  type Components,
+  type ExtraProps
+} from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
+import { DesignEmbed } from '@/features/design-board/components/embeds/design-embed';
+import { isDesignRef } from '@/features/design-board/lib/design-refs';
 import { cn } from '@/lib/utils';
 
 export interface MarkdownHeading {
@@ -20,6 +32,7 @@ export interface MarkdownHeading {
 }
 
 const LAYER_LINK = /^\?layer=([a-z0-9-]+)$/;
+const HEX_COLOR = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
 const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
 
@@ -54,10 +67,28 @@ export function markdownHeadings(content: string): MarkdownHeading[] {
   return slugHeadings(parser.parse(content)).map(({ heading }) => heading);
 }
 
+/** Design references render as embeds, which can't sit inside a `<p>`. */
+function containsDesignEmbed(node: Element): boolean {
+  return node.children.some(
+    (child) =>
+      child.type === 'element' &&
+      ((child.tagName === 'img' && isDesignRef(String(child.properties.src ?? ''))) ||
+        containsDesignEmbed(child))
+  );
+}
+
+function urlTransform(url: string): string {
+  return isDesignRef(url) ? url : defaultUrlTransform(url);
+}
+
 const remarkPlugins = [remarkGfm, remarkMath, remarkHeadingIds];
-const rehypePlugins = [[rehypeKatex, { throwOnError: false, strict: false }]] as ComponentProps<
-  typeof ReactMarkdown
->['rehypePlugins'];
+// Block ids are stamped after KaTeX and graphics, which replace the <pre> they render.
+const rehypePlugins = [
+  rehypeVectorGraphics,
+  rehypeInteractiveGraphics,
+  [rehypeKatex, { throwOnError: false, strict: false }],
+  rehypeBlockIdFromComments
+] as ComponentProps<typeof ReactMarkdown>['rehypePlugins'];
 
 const headingClass = {
   h1: 'mt-0 mb-4 text-3xl font-semibold tracking-tight',
@@ -84,7 +115,12 @@ const baseComponents: Components = {
   h4: headingComponent('h4'),
   h5: headingComponent('h5'),
   h6: headingComponent('h6'),
-  p: ({ node: _node, ...props }) => <p className='my-4 leading-7' {...props} />,
+  p: ({ node, ...props }) =>
+    node && containsDesignEmbed(node) ? (
+      <div className='my-4 leading-7' {...props} />
+    ) : (
+      <p className='my-4 leading-7' {...props} />
+    ),
   strong: ({ node: _node, ...props }) => (
     <strong className='text-foreground font-semibold' {...props} />
   ),
@@ -111,24 +147,45 @@ const baseComponents: Components = {
   input: ({ node: _node, ...props }) => (
     <input {...props} disabled className='accent-primary mr-2 align-middle' />
   ),
-  code: ({ node: _node, className, ...props }) => (
-    <code
-      className={cn(
-        className?.startsWith('language-')
-          ? 'font-mono text-sm leading-6'
-          : 'bg-muted text-foreground rounded px-1.5 py-0.5 font-mono text-[0.85em]',
-        className
-      )}
-      {...props}
-    />
-  ),
+  code: ({ node: _node, className, children, ...props }) => {
+    const color =
+      !className?.startsWith('language-') &&
+      typeof children === 'string' &&
+      HEX_COLOR.test(children)
+        ? children
+        : null;
+    return (
+      <code
+        className={cn(
+          className?.startsWith('language-')
+            ? 'font-mono text-sm leading-6'
+            : 'bg-muted text-foreground rounded px-1.5 py-0.5 font-mono text-[0.85em]',
+          color && 'inline-flex items-center gap-1.5 whitespace-nowrap',
+          className
+        )}
+        {...props}
+      >
+        {color ? (
+          <span
+            aria-hidden
+            className='inline-block h-3 w-4 shrink-0 rounded-[3px] border border-black/20 dark:border-white/30'
+            style={{ backgroundColor: color }}
+          />
+        ) : null}
+        {children}
+      </code>
+    );
+  },
   pre: ({ node: _node, ...props }) => (
     <pre className='bg-muted/50 my-5 overflow-x-auto rounded-lg border p-4' {...props} />
   ),
-  img: ({ node: _node, alt, ...props }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt ?? ''} className='my-4 max-w-full rounded-lg border' {...props} />
-  ),
+  img: ({ node: _node, alt, src, ...props }) =>
+    typeof src === 'string' && isDesignRef(src) ? (
+      <DesignEmbed src={src} alt={alt} className='my-4' />
+    ) : (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img alt={alt ?? ''} src={src} className='my-4 max-w-full rounded-lg border' {...props} />
+    ),
   table: ({ node: _node, ...props }) => (
     <div className='my-5 overflow-x-auto rounded-lg border'>
       <table className='w-full text-sm' {...props} />
@@ -145,7 +202,25 @@ const baseComponents: Components = {
   td: ({ node: _node, ...props }) => (
     <td className='px-3 py-2 align-top [overflow-wrap:anywhere]' {...props} />
   ),
-  hr: () => <hr className='my-8' />
+  hr: ({ node: _node, ...props }) => <hr className='my-8' {...props} />,
+  figure: ({ node: _node, className, ...props }) => {
+    const align = (props as Record<string, unknown>)['data-align'];
+    return (
+      <figure
+        className={cn(
+          className?.includes('vector-graphic') &&
+            'my-5 w-full [&_svg]:block [&_svg]:h-auto [&_svg]:w-full',
+          className?.includes('vector-graphic') &&
+            (align === 'left' ? 'mr-auto' : align === 'right' ? 'ml-auto' : 'mx-auto'),
+          className?.includes('interactive-graphic') &&
+            'my-5 w-full [&_iframe]:block [&_iframe]:w-full [&_iframe]:border-0',
+          'data-[invalid]:text-destructive data-[invalid]:rounded-md data-[invalid]:border data-[invalid]:border-dashed data-[invalid]:p-4 data-[invalid]:text-sm',
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 };
 
 const LayerLinkContext = createContext<((slug: string) => void) | undefined>(undefined);
@@ -200,11 +275,17 @@ interface MarkdownProps {
 export function Markdown({ content, onLayerLink, className }: MarkdownProps) {
   return (
     <LayerLinkContext value={onLayerLink}>
-      <div className={cn('layer-markdown text-foreground/85 text-[15px]', className)}>
+      <div
+        className={cn(
+          'layer-markdown text-foreground/85 text-[15px] [&_[data-block-id]]:scroll-mt-6',
+          className
+        )}
+      >
         <ReactMarkdown
           remarkPlugins={remarkPlugins}
           rehypePlugins={rehypePlugins}
           components={components}
+          urlTransform={urlTransform}
         >
           {content}
         </ReactMarkdown>

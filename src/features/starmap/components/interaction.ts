@@ -55,9 +55,8 @@ export function createRendererLoopPauseController(onChange: () => void) {
   };
 }
 
-/** Space toggles playback unless the user is typing or a control already handles the key. */
-export function shouldIgnorePlaybackHotkey(e: KeyboardEvent, active: Element | null) {
-  if (e.code !== 'Space' || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return true;
+/** Whether the focused element already handles typing or Space/Enter itself. */
+export function isKeyboardOwner(active: Element | null) {
   if (!active || active === document.body) return false;
   const tag = active.tagName;
   return (
@@ -69,4 +68,10 @@ export function shouldIgnorePlaybackHotkey(e: KeyboardEvent, active: Element | n
     active.getAttribute('role') === 'menuitem' ||
     active.getAttribute('role') === 'slider'
   );
+}
+
+/** Wheel delta in CSS pixels, whatever unit the device reports. */
+export function wheelDeltaPx(e: WheelEvent, pageHeight: number) {
+  const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? pageHeight : 1;
+  return { dx: e.deltaX * unit, dy: e.deltaY * unit };
 }

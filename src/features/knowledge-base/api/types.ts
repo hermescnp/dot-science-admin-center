@@ -1,3 +1,4 @@
+import { stripBlockIdComments, type SectionContentJson } from '@hermescnp/content-blocks';
 import { z } from 'zod';
 
 export const MAX_LAYER_CONTENT_BYTES = 200 * 1024;
@@ -8,7 +9,10 @@ export interface KnowledgeLayer {
   slug: string;
   title: string;
   summary: string | null;
+  /** Markdown source; every top-level block is preceded by its `<!-- block-id:… -->` comment. */
   content: string;
+  /** Blocks with persistent ids and their segments, derived from `content`. */
+  contentJson: SectionContentJson;
   position: number;
   updatedAt: string;
   updatedByName: string | null;
@@ -32,7 +36,8 @@ const layerFields = {
   content: z
     .string()
     .refine(
-      (value) => new TextEncoder().encode(value).length <= MAX_LAYER_CONTENT_BYTES,
+      (value) =>
+        new TextEncoder().encode(stripBlockIdComments(value)).length <= MAX_LAYER_CONTENT_BYTES,
       'Content is larger than 200 KB'
     )
 };
@@ -44,6 +49,17 @@ export const layerFormSchema = createLayerSchema.extend({
 export const updateLayerSchema = z.object(layerFields).partial();
 export const createSectionSchema = z.object({
   title: z.string().trim().min(1, 'Title is required').max(80)
+});
+export const generateVectorGraphicSchema = z.object({
+  description: z.string().trim().min(1, 'Describe the graphic').max(2000),
+  currentSvg: z.string().max(100_000).optional(),
+  layerTitle: z.string().trim().max(200).optional()
+});
+export const generateInteractiveGraphicSchema = z.object({
+  description: z.string().trim().min(1, 'Describe the interactive graphic').max(2000),
+  currentCode: z.string().max(200_000).optional(),
+  height: z.number().int().positive().optional(),
+  layerTitle: z.string().trim().max(200).optional()
 });
 
 export interface KnowledgeImage {
@@ -66,3 +82,5 @@ export const KNOWLEDGE_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 export type CreateLayerPayload = z.infer<typeof createLayerSchema>;
 export type UpdateLayerPayload = z.infer<typeof updateLayerSchema>;
 export type CreateSectionPayload = z.infer<typeof createSectionSchema>;
+export type GenerateVectorGraphicPayload = z.infer<typeof generateVectorGraphicSchema>;
+export type GenerateInteractiveGraphicPayload = z.infer<typeof generateInteractiveGraphicSchema>;

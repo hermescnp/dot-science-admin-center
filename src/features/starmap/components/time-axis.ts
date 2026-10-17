@@ -59,11 +59,7 @@ export function computeRecency(nodes: StarmapNode[]): Recency {
   return { maxTs, minTs, rec, timed };
 }
 
-export interface TimeBucket {
-  memory: number;
-  skill: number;
-  total: number;
-}
+export type TimeBucket = Record<StarmapNode['kind'] | 'total', number>;
 
 export interface TimeAxis {
   buckets: TimeBucket[];
@@ -76,12 +72,13 @@ export interface TimeAxis {
 }
 
 // Bucket nodes across recency [0,1] into a fixed-width histogram — the little
-// bars the scrubber rides over. Skill/memory kept separate so the bars can show
-// the same two-tone split as the map glyphs.
+// bars the scrubber rides over. Kinds kept separate so the bars can show the
+// same color split as the map glyphs.
 export function buildTimeAxis(graph: StarmapGraph, bucketCount = 48): TimeAxis {
   const { maxTs, minTs, rec, timed } = computeRecency(graph.nodes);
   const n = Math.max(1, bucketCount);
   const buckets: TimeBucket[] = Array.from({ length: n }, () => ({
+    concept: 0,
     memory: 0,
     skill: 0,
     total: 0
@@ -92,12 +89,7 @@ export function buildTimeAxis(graph: StarmapGraph, bucketCount = 48): TimeAxis {
     const idx = clamp(Math.floor(r * n), 0, n - 1);
     const b = buckets[idx]!;
     b.total += 1;
-
-    if (node.kind === 'memory') {
-      b.memory += 1;
-    } else {
-      b.skill += 1;
-    }
+    b[node.kind] += 1;
   }
 
   const maxTotal = buckets.reduce((m, b) => Math.max(m, b.total), 0);

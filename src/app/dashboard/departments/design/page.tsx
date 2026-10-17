@@ -1,9 +1,10 @@
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { designBoardKeys } from '@/features/design-board/api/queries';
-import { DesignBoardView } from '@/features/design-board/components/design-board';
-import { getDesignBoard } from '@/features/design-board/server/design-board';
+import { designKeys } from '@/features/design-board/api/queries';
+import { DesignView } from '@/features/design-board/components/design-view';
+import { getDesignSections } from '@/features/design-board/server/design-board';
+import { getDesignComponents } from '@/features/design-board/server/design-components';
 import { getSupabaseServerClient } from '@/lib/auth-server';
 import { getQueryClient } from '@/lib/query-client';
 
@@ -14,8 +15,12 @@ export const metadata = {
 export default function DesignDepartmentPage() {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery({
-    queryKey: designBoardKeys.main(),
-    queryFn: async () => getDesignBoard(await getSupabaseServerClient())
+    queryKey: designKeys.sections(),
+    queryFn: async () => getDesignSections(await getSupabaseServerClient())
+  });
+  void queryClient.prefetchQuery({
+    queryKey: designKeys.components(),
+    queryFn: async () => getDesignComponents(await getSupabaseServerClient())
   });
 
   return (
@@ -25,7 +30,7 @@ export default function DesignDepartmentPage() {
           <Skeleton className='h-[calc(100svh-4rem)] w-full rounded-none md:h-[calc(100svh-3.5rem)]' />
         }
       >
-        <DesignBoardView />
+        <DesignView />
       </Suspense>
     </HydrationBoundary>
   );

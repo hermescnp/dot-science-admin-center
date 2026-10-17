@@ -27,6 +27,8 @@ export function metaBadges(n: StarmapNode): string[] {
 
   if (n.kind === 'memory') {
     out.push(n.memorySource === 'profile' ? 'profile memory' : 'memory');
+  } else if (n.kind === 'concept') {
+    out.push('concept');
   } else {
     out.push(n.category);
 

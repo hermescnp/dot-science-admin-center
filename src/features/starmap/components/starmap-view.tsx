@@ -5,6 +5,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Empty,
@@ -16,23 +17,71 @@ import {
 } from '@/components/ui/empty';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { starmapQueryOptions } from '../api/queries';
-import type { StarmapGraph, StarmapMemoryCard, StarmapNode } from '../api/types';
+import type { StarmapGraph } from '../api/types';
+import { findMemoryCard, findRelatedStars, type StarQuery } from '../lib/related-stars';
 import { StarMap } from './star-map';
 
 const SYNC_COMMAND = 'python scripts/push_starmap_snapshot.py';
 
-export function StarmapView() {
+export interface StarFocus {
+  label: string;
+  query: StarQuery;
+}
+
+interface StarmapViewProps {
+  /** Highlights the stars related to this text, e.g. the selected knowledge layer. */
+  focus?: StarFocus | null;
+  onClearFocus?: () => void;
+}
+
+export function StarmapView({ focus = null, onClearFocus }: StarmapViewProps) {
   const { data } = useSuspenseQuery(starmapQueryOptions());
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const graph = data.snapshot?.graph ?? null;
+  const focusQuery = focus?.query;
+  const relatedIds = useMemo(
+    () => (graph && focusQuery ? findRelatedStars(graph, focusQuery) : null),
+    [graph, focusQuery]
+  );
 
-  if (!data.snapshot) return <StarmapEmpty />;
+  if (!data.snapshot || !graph) return <StarmapEmpty />;
 
-  const { graph, createdAt, profile, demo } = data.snapshot;
+  const { createdAt, profile, demo } = data.snapshot;
 
   return (
-    <div className='relative flex h-[calc(100svh-4rem)] w-full overflow-hidden md:h-[calc(100svh-3.5rem)]'>
-      <StarMap graph={graph} onSelectNode={setSelectedId} />
+    <div className='relative flex h-full w-full overflow-hidden'>
+      <StarMap
+        graph={graph}
+        highlightIds={relatedIds && relatedIds.size > 0 ? relatedIds : null}
+        onSelectNode={setSelectedId}
+      />
       <div className='pointer-events-none absolute top-16 right-3 bottom-3 flex w-[min(20rem,calc(100%-1.5rem))] flex-col gap-3 *:pointer-events-auto'>
+        {focus && relatedIds ? (
+          <Card className='bg-card/85 shrink-0 gap-2 py-4 backdrop-blur'>
+            <CardHeader className='flex items-start justify-between gap-2 px-4'>
+              <div className='min-w-0'>
+                <CardDescription className='text-xs'>Related stars</CardDescription>
+                <CardTitle className='truncate text-sm'>{focus.label}</CardTitle>
+              </div>
+              {onClearFocus ? (
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='size-7 shrink-0'
+                  onClick={onClearFocus}
+                >
+                  <Icons.close className='size-4' />
+                  <span className='sr-only'>Clear highlight</span>
+                </Button>
+              ) : null}
+            </CardHeader>
+            <CardContent className='text-muted-foreground px-4 text-sm'>
+              {relatedIds.size > 0
+                ? `${relatedIds.size} ${relatedIds.size === 1 ? 'star relates' : 'stars relate'} to it.`
+                : 'No stars relate to it yet.'}
+            </CardContent>
+          </Card>
+        ) : null}
         <Card className='bg-card/85 shrink-0 gap-3 backdrop-blur'>
           <CardHeader>
             <CardTitle className='flex items-center gap-2 text-base'>
@@ -57,9 +106,10 @@ export function StarmapView() {
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent className='grid grid-cols-3 gap-2 text-center'>
+          <CardContent className='grid grid-cols-4 gap-2 text-center'>
             <Stat label='Skills' value={graph.nodes.filter((n) => n.kind === 'skill').length} />
             <Stat label='Memories' value={graph.memory.length} />
+            <Stat label='Concepts' value={graph.nodes.filter((n) => n.kind === 'concept').length} />
             <Stat label='Links' value={graph.edges.length} />
           </CardContent>
         </Card>
@@ -76,13 +126,6 @@ function Stat({ label, value }: { label: string; value: number }) {
       <div className='text-muted-foreground text-xs'>{label}</div>
     </div>
   );
-}
-
-/** Node ids for memories are `memory:<source>:<index>[:<fingerprint>]`, indexing into `graph.memory`. */
-function findMemoryCard(graph: StarmapGraph, node: StarmapNode): StarmapMemoryCard | null {
-  const index = Number(node.id.split(':')[2]);
-  const card = Number.isInteger(index) ? graph.memory[index] : undefined;
-  return card ?? null;
 }
 
 function NodeDetails({ graph, nodeId }: { graph: StarmapGraph; nodeId: string | null }) {
@@ -104,13 +147,15 @@ function NodeDetails({ graph, nodeId }: { graph: StarmapGraph; nodeId: string | 
     return (
       <Card className='bg-card/85 backdrop-blur'>
         <CardContent className='text-muted-foreground text-center text-sm'>
-          Select a star to see its details. Drag to pan, scroll to zoom, double-click to reset.
+          Select a star to see its details. Scroll or drag to pan, pinch or ⌘/Ctrl + scroll to zoom,
+          Shift + 1 to fit.
         </CardContent>
       </Card>
     );
   }
 
   const memory = node.kind === 'memory' ? findMemoryCard(graph, node) : null;
+  const body = memory?.body ?? node.description;
 
   return (
     <Card className='bg-card/85 min-h-0 gap-3 backdrop-blur'>
@@ -129,8 +174,8 @@ function NodeDetails({ graph, nodeId }: { graph: StarmapGraph; nodeId: string | 
       </CardHeader>
       <CardContent className='min-h-0'>
         <ScrollArea className='max-h-72'>
-          {memory?.body ? (
-            <p className='text-muted-foreground text-sm whitespace-pre-wrap'>{memory.body}</p>
+          {body ? (
+            <p className='text-muted-foreground text-sm whitespace-pre-wrap'>{body}</p>
           ) : null}
           {related.length > 0 && (
             <div className='mt-3 space-y-1.5'>

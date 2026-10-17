@@ -19,6 +19,7 @@ import type { KnowledgeLayer } from '../api/types';
 import { Markdown, markdownHeadings } from './markdown';
 
 const dateFormat = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
+const BLOCK_HASH = /^#(blk_[a-z0-9-]+)$/;
 
 interface LayerPageProps {
   layer: KnowledgeLayer;
@@ -30,7 +31,7 @@ interface LayerPageProps {
 
 export function LayerPage({ layer, sectionTitle, onEdit, onDeleted, onLayerLink }: LayerPageProps) {
   const queryClient = useQueryClient();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [activeHeading, setActiveHeading] = useState<string | null>(null);
 
@@ -51,30 +52,43 @@ export function LayerPage({ layer, sectionTitle, onEdit, onDeleted, onLayerLink 
   });
 
   useEffect(() => {
-    const root = scrollRef.current;
-    if (!root || toc.length === 0) return;
+    const page = pageRef.current;
+    if (!page || toc.length === 0) return;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.find((entry) => entry.isIntersecting);
         if (visible) setActiveHeading(visible.target.id);
       },
-      { root, rootMargin: '0px 0px -70% 0px' }
+      { rootMargin: '0px 0px -70% 0px' }
     );
     for (const heading of toc) {
-      const element = root.querySelector(`#${CSS.escape(heading.id)}`);
+      const element = page.querySelector(`#${CSS.escape(heading.id)}`);
       if (element) observer.observe(element);
     }
     return () => observer.disconnect();
   }, [toc]);
 
+  useEffect(() => {
+    function scrollToHashBlock() {
+      const blockId = BLOCK_HASH.exec(window.location.hash)?.[1];
+      if (!blockId) return;
+      pageRef.current
+        ?.querySelector(`[data-block-id="${CSS.escape(blockId)}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    scrollToHashBlock();
+    window.addEventListener('hashchange', scrollToHashBlock);
+    return () => window.removeEventListener('hashchange', scrollToHashBlock);
+  }, []);
+
   function scrollToHeading(id: string) {
-    const element = scrollRef.current?.querySelector(`#${CSS.escape(id)}`);
+    const element = pageRef.current?.querySelector(`#${CSS.escape(id)}`);
     element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setActiveHeading(id);
   }
 
   return (
-    <div ref={scrollRef} className='h-full overflow-y-auto'>
+    <div ref={pageRef}>
       <AlertModal
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
@@ -139,7 +153,7 @@ export function LayerPage({ layer, sectionTitle, onEdit, onDeleted, onLayerLink 
 
         {toc.length > 0 ? (
           <aside className='hidden w-full max-w-56 min-w-0 xl:col-start-3 xl:block'>
-            <nav aria-label='On this page' className='sticky top-0'>
+            <nav aria-label='On this page' className='sticky top-8'>
               <p className='mb-3 text-xs font-semibold tracking-wider uppercase'>On this page</p>
               <ul className='space-y-1 border-l text-sm'>
                 {toc.map((heading) => (

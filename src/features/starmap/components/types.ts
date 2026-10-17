@@ -66,6 +66,7 @@ export interface Palette {
   bg: Rgb;
   c: GraphParams;
   chipBg: string;
+  conceptInk: Rgb;
   darkTheme: boolean;
   inkInv: string;
   memoryInk: Rgb;

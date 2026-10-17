@@ -33,6 +33,9 @@ export interface Scene {
   dpr: number;
   fades: FadeBuckets;
   focusId: null | string;
+  // External filter (e.g. stars related to a knowledge layer). Only applies while
+  // no node is focused and no ring is selected, so those still take precedence.
+  highlight?: null | ReadonlySet<string>;
   hoverId: null | string;
   hoverLink: null | string;
   hoverRing: null | number;
@@ -173,6 +176,7 @@ export function drawScene(scene: Scene): DrawResult {
     dpr,
     fades,
     focusId,
+    highlight = null,
     hoverId,
     hoverLink,
     hoverRing,
@@ -204,7 +208,9 @@ export function drawScene(scene: Scene): DrawResult {
 
   const erec = (rec: number) => (frontier > 0 ? clamp(rec / frontier, 0, 1) : 1);
   const { h, w } = size;
-  const { bandInk, base, bg, c, chipBg, darkTheme, inkInv, memoryInk, skillInk } = palette;
+  const { bandInk, base, bg, c, chipBg, conceptInk, darkTheme, inkInv, memoryInk, skillInk } =
+    palette;
+  const kindInk = { concept: conceptInk, memory: memoryInk, skill: skillInk };
   const { bandAlpha, lightSize, ringAlpha, sheen } = RING_PARAMS[darkTheme ? 'dark' : 'light'];
 
   let animating = false;
@@ -265,6 +271,7 @@ export function drawScene(scene: Scene): DrawResult {
   const focusSet = focusId ? (adjacency.get(focusId) ?? new Set<string>()) : null;
   const ringIdx = selectedRing;
   const ring = ringIdx != null ? (rings[ringIdx] ?? null) : null;
+  const filter = !focusId && !ring ? highlight : null;
   // A selected ring owns the band it caps: previous ring → this ring. Ring 0 is
   // visual-only/unlabeled, so the first selectable date naturally owns shell 0→1.
   const ringLo = ring && ringIdx != null ? (rings[ringIdx - 1]?.ratio ?? 0) - 1e-3 : 0;
@@ -446,9 +453,13 @@ export function drawScene(scene: Scene): DrawResult {
         ? 1
         : key === hoverLink
           ? clamp(ambient * 2, 0, 0.7)
-          : focusId || ring
-            ? 0.025
-            : ambient;
+          : filter
+            ? filter.has(s.id) && filter.has(t.id)
+              ? 0.6
+              : 0.02
+            : focusId || ring
+              ? 0.025
+              : ambient;
 
     const linkAlpha = fadeAlpha(fades.links, key, targetAlpha, lit);
 
@@ -487,8 +498,9 @@ export function drawScene(scene: Scene): DrawResult {
     const isNeighbor = revealed && !!focusSet && focusSet.has(n.id);
     const inRing = !!ring && n.rec >= ringLo && n.rec < ringHi;
     const nodeHigh = isFocus || isNeighbor;
+    const isMatch = !!filter && filter.has(n.id);
     const er = erec(n.rec);
-    const ageScale = nodeHigh || inRing ? 1 : 0.34 + Math.min(1, er / 0.4) * 0.66;
+    const ageScale = nodeHigh || inRing || isMatch ? 1 : 0.34 + Math.min(1, er / 0.4) * 0.66;
     // Stable screen-space radius: use the graph's resting fit zoom, not the
     // current playback camera zoom. Full-map views keep their original density,
     // while t≈0 spore-zoom no longer inflates nodes into bubbles.
@@ -504,8 +516,17 @@ export function drawScene(scene: Scene): DrawResult {
           : 0.16
         : focusId
           ? 0.16
-          : recencyInk(er);
-    const alpha = fadeAlpha(fades.nodes, n.id, revealed ? baseAlpha : 0, nodeHigh || inRing);
+          : filter
+            ? isMatch
+              ? 1
+              : 0.1
+            : recencyInk(er);
+    const alpha = fadeAlpha(
+      fades.nodes,
+      n.id,
+      revealed ? baseAlpha : 0,
+      nodeHigh || inRing || isMatch
+    );
 
     // Birth fade + warp rise are coupled (slow rates) so a star grows in instead
     // of flashing. Focus snaps (no drift).
@@ -524,7 +545,7 @@ export function drawScene(scene: Scene): DrawResult {
     const sy = projY(n.y * posScale);
 
     ctx.globalAlpha = vis;
-    const nodeInk = nodeHigh ? base : n.kind === 'memory' ? memoryInk : skillInk;
+    const nodeInk = nodeHigh || isMatch ? base : kindInk[n.kind];
     const shape = NODE_SHAPE[n.kind];
 
     if (shape === 'circle') {

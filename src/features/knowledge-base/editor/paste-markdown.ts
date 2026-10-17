@@ -1,3 +1,4 @@
+import { isBlockIdCommentHtml, stripBlockIdComments } from '@hermescnp/content-blocks';
 import type { Editor, JSONContent } from '@tiptap/react';
 
 const PM_SLICE_PATTERN = /data-pm-slice\s*=/i;
@@ -101,7 +102,8 @@ export function handleMarkdownPaste(event: ClipboardEvent, editor: Editor | null
   if (!plain) return false;
 
   event.preventDefault();
-  const text = normalizeLineEndings(plain);
+  const normalized = normalizeLineEndings(plain);
+  const text = isBlockIdCommentHtml(normalized) ? stripBlockIdComments(normalized) : normalized;
   const blocks = sanitize(editor, parseMarkdownBlocks(editor, text));
   const content = blocks.length > 0 ? blocks : plainTextToParagraphs(text);
 

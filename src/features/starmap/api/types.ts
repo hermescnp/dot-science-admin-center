@@ -1,11 +1,13 @@
 /** Learning graph built by hermes-agent `agent.learning_graph.build_learning_graph()`. */
 
-/** One graph node in the star map (learned skill or memory chunk). */
+/** One graph node in the star map (learned skill, memory chunk or concept). */
 export interface StarmapNode {
   id: string;
   label: string;
-  kind: 'memory' | 'skill';
+  kind: 'concept' | 'memory' | 'skill';
   memorySource?: 'memory' | 'profile';
+  /** Short explanation of a concept node. */
+  description?: string;
   timestamp?: null | number;
   category: string;
   useCount: number;

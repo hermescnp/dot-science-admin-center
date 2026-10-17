@@ -5,20 +5,42 @@ import { useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'reac
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  isBlockIdSeed,
+  markdownWithBlockIds,
+  markdownWithoutBlockIds,
+  seedBlockIds
+} from '../editor/block-ids';
 import { getLayerEditorExtensions, type MathKind } from '../editor/extensions';
+import {
+  applyInteractiveGraphic,
+  type InteractiveGraphicEdit
+} from '../editor/interactive-graphic';
 import { handleMarkdownPaste } from '../editor/paste-markdown';
 import { insertTableFromToolbar } from '../editor/tables';
-import { LinkDialog, MathDialog } from './editor-dialogs';
+import {
+  applyVectorGraphic,
+  removeVectorGraphic,
+  type VectorGraphicEdit
+} from '../editor/vector-graphic';
+import {
+  InteractiveGraphicDialog,
+  LinkDialog,
+  MathDialog,
+  VectorGraphicDialog
+} from './editor-dialogs';
 import { ImagePickerDialog } from './image-picker-dialog';
 import { TableBlockControls } from './table-block-controls';
 
 type EditorDialog =
   | { type: 'image' }
   | { type: 'link'; href: string }
-  | { type: 'math'; kind: MathKind; latex: string; pos: number | null };
+  | { type: 'math'; kind: MathKind; latex: string; pos: number | null }
+  | ({ type: 'vectorGraphic' } & VectorGraphicEdit)
+  | ({ type: 'interactiveGraphic' } & InteractiveGraphicEdit);
 
 interface LayerContentEditorProps {
-  /** Initial Markdown; the editor owns the content after mount. */
+  /** Initial Markdown with block-id comments; the editor owns the content after mount. */
   value: string;
   onChange: (markdown: string) => void;
   onBlur?: () => void;
@@ -33,13 +55,16 @@ export function LayerContentEditor({
 }: LayerContentEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
+  const blockIdsSeededRef = useRef(false);
   const [dialog, setDialog] = useState<EditorDialog | null>(null);
 
   const extensions = useMemo(
     () =>
       getLayerEditorExtensions({
         placeholder,
-        onEditMath: (kind, latex, pos) => setDialog({ type: 'math', kind, latex, pos })
+        onEditMath: (kind, latex, pos) => setDialog({ type: 'math', kind, latex, pos }),
+        onEditVectorGraphic: (edit) => setDialog({ type: 'vectorGraphic', ...edit }),
+        onEditInteractiveGraphic: (edit) => setDialog({ type: 'interactiveGraphic', ...edit })
       }),
     [placeholder]
   );
@@ -48,7 +73,7 @@ export function LayerContentEditor({
     {
       immediatelyRender: false,
       extensions,
-      content: value,
+      content: markdownWithoutBlockIds(value),
       contentType: 'markdown',
       editorProps: {
         attributes: { class: 'layer-editor-body', spellcheck: 'true' },
@@ -56,11 +81,15 @@ export function LayerContentEditor({
       },
       onCreate: ({ editor: created }) => {
         editorRef.current = created;
+        blockIdsSeededRef.current = seedBlockIds(created, value);
       },
       onDestroy: () => {
         editorRef.current = null;
       },
-      onUpdate: ({ editor: current }) => onChange(current.getMarkdown()),
+      onUpdate: ({ editor: current, transaction }) => {
+        if (isBlockIdSeed(transaction)) return;
+        onChange(blockIdsSeededRef.current ? markdownWithBlockIds(current) : current.getMarkdown());
+      },
       onBlur: () => onBlur?.()
     },
     // `value` only seeds the editor; re-creating it on every keystroke would reset the cursor.
@@ -109,6 +138,25 @@ export function LayerContentEditor({
     (kind === 'block' ? chain.deleteBlockMath({ pos }) : chain.deleteInlineMath({ pos })).run();
   }
 
+  function applyGraphic(svg: string, layout: VectorGraphicEdit['layout'], pos: number | null) {
+    closeDialog();
+    if (editor) applyVectorGraphic(editor, svg, layout, pos);
+  }
+
+  function applyInteractive(
+    code: string,
+    layout: InteractiveGraphicEdit['layout'],
+    pos: number | null
+  ) {
+    closeDialog();
+    if (editor) applyInteractiveGraphic(editor, code, layout, pos);
+  }
+
+  function removeGraphic(pos: number) {
+    closeDialog();
+    if (editor) removeVectorGraphic(editor, pos);
+  }
+
   return (
     <div
       ref={containerRef}
@@ -122,6 +170,12 @@ export function LayerContentEditor({
             setDialog({ type: 'link', href: String(editor.getAttributes('link').href ?? '') })
           }
           onMath={() => setDialog({ type: 'math', kind: 'inline', latex: '', pos: null })}
+          onVectorGraphic={() =>
+            setDialog({ type: 'vectorGraphic', svg: '', layout: { align: 'center' }, pos: null })
+          }
+          onInteractiveGraphic={() =>
+            setDialog({ type: 'interactiveGraphic', code: '', layout: {}, pos: null })
+          }
         />
       ) : (
         <div className='h-11 border-b' />
@@ -151,6 +205,26 @@ export function LayerContentEditor({
           onClose={closeDialog}
           onSubmit={(latex, kind) => applyMath(latex, kind, dialog.pos)}
           onRemove={dialog.pos === null ? undefined : () => removeMath(dialog.kind, dialog.pos!)}
+        />
+      ) : null}
+      {dialog?.type === 'vectorGraphic' ? (
+        <VectorGraphicDialog
+          initialSvg={dialog.svg}
+          initialLayout={dialog.layout}
+          editing={dialog.pos !== null}
+          onClose={closeDialog}
+          onSubmit={(svg, layout) => applyGraphic(svg, layout, dialog.pos)}
+          onRemove={dialog.pos === null ? undefined : () => removeGraphic(dialog.pos!)}
+        />
+      ) : null}
+      {dialog?.type === 'interactiveGraphic' ? (
+        <InteractiveGraphicDialog
+          initialCode={dialog.code}
+          initialLayout={dialog.layout}
+          editing={dialog.pos !== null}
+          onClose={closeDialog}
+          onSubmit={(code, layout) => applyInteractive(code, layout, dialog.pos)}
+          onRemove={dialog.pos === null ? undefined : () => removeGraphic(dialog.pos!)}
         />
       ) : null}
     </div>
@@ -246,12 +320,16 @@ function EditorToolbar({
   editor,
   onImage,
   onLink,
-  onMath
+  onMath,
+  onVectorGraphic,
+  onInteractiveGraphic
 }: {
   editor: Editor;
   onImage: () => void;
   onLink: () => void;
   onMath: () => void;
+  onVectorGraphic: () => void;
+  onInteractiveGraphic: () => void;
 }) {
   const active = useEditorState({
     editor,
@@ -298,6 +376,12 @@ function EditorToolbar({
         <ToolbarSeparator />
         <ToolbarButton label='Insert image' onClick={onImage}>
           <Icons.photoPlus />
+        </ToolbarButton>
+        <ToolbarButton label='Vector graphic (SVG)' onClick={onVectorGraphic}>
+          <Icons.vectorGraphic />
+        </ToolbarButton>
+        <ToolbarButton label='Interactive graphic (HTML/CSS/JS)' onClick={onInteractiveGraphic}>
+          <Icons.interactiveGraphic />
         </ToolbarButton>
         <ToolbarButton label='Link' active={active.link} onClick={onLink}>
           <Icons.link />

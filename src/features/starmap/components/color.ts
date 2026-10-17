@@ -99,18 +99,24 @@ function hslToRgb(h: number, s: number, l: number): Rgb {
   };
 }
 
-// Complementary ink: rotate the source hue (the theme primary) and keep it vivid
-// so memories read as a distinct color from skills, in any theme.
-function complementaryInk(c: Rgb): Rgb {
+// Rotate the source hue (the theme primary) and keep it vivid so each node kind
+// reads as a distinct color from skills, in any theme.
+function rotatedInk(c: Rgb, degrees: number): Rgb {
   const [h, s, l] = rgbToHsl(c);
 
-  return hslToRgb(h + 165, Math.max(s, 0.5), clamp(l, 0.5, 0.7));
+  return hslToRgb(h + degrees, Math.max(s, 0.5), clamp(l, 0.5, 0.7));
 }
 
 // Memory ink: the complementary hue muted toward the overlay background so it
 // reads as a distinct-but-quiet color (fake alpha), not a loud full-sat pop.
 export function memoryInkFor(primary: Rgb, bg: Rgb): Rgb {
-  return mixRgb(complementaryInk(primary), bg, 0.45);
+  return mixRgb(rotatedInk(primary, 165), bg, 0.45);
+}
+
+// Concept ink: a hue roughly equidistant from skills and memories, muted less so
+// the hub nodes stand out.
+export function conceptInkFor(primary: Rgb, bg: Rgb): Rgb {
+  return mixRgb(rotatedInk(primary, 270), bg, 0.3);
 }
 
 // Resolve the theme-derived palette once per theme change — the resolveRgb probe
@@ -137,6 +143,7 @@ export function computePalette(canvas: HTMLCanvasElement): Palette {
     bg,
     c: MODE_DEFAULTS[darkTheme ? 'dark' : 'light'],
     chipBg: darkTheme ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.85)',
+    conceptInk: conceptInkFor(primary, bg),
     darkTheme,
     inkInv: darkTheme ? 'rgba(0,0,0,1)' : 'rgba(255,255,255,1)',
     memoryInk: memoryInkFor(primary, bg),

@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/api-client';
 import type {
   CreateLayerPayload,
   CreateSectionPayload,
+  GenerateInteractiveGraphicPayload,
+  GenerateVectorGraphicPayload,
   KnowledgeBase,
   KnowledgeImage,
   KnowledgeLayer,
@@ -47,6 +49,24 @@ export async function uploadKnowledgeImage(file: File): Promise<KnowledgeImage> 
 
 export async function createSection(payload: CreateSectionPayload) {
   return apiClient<Omit<KnowledgeSection, 'layers'>>('/knowledge/sections', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function generateVectorGraphic(
+  payload: GenerateVectorGraphicPayload
+): Promise<{ svg: string }> {
+  return apiClient<{ svg: string }>('/knowledge/vector-graphic', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function generateInteractiveGraphic(
+  payload: GenerateInteractiveGraphicPayload
+): Promise<{ code: string }> {
+  return apiClient<{ code: string }>('/knowledge/interactive-graphic', {
     method: 'POST',
     body: JSON.stringify(payload)
   });

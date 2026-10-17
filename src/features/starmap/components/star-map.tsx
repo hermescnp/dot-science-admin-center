@@ -7,17 +7,19 @@ import { type Simulation } from 'd3-force';
 import { useTheme } from 'next-themes';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { Icons } from '@/components/icons';
 import type { StarmapGraph } from '../api/types';
-import { computePalette, memoryInkFor, resolveRgb, rgba } from './color';
+import { computePalette, conceptInkFor, memoryInkFor, resolveRgb, rgba } from './color';
 import { RING_OUTER, TILT, ZOOM_MAX, ZOOM_MIN } from './constants';
 import { clamp, distToSegmentSq, fitScale, fitViewport, nodeRadius } from './geometry';
 import {
   createDoubleTapDetector,
   createRendererLoopPauseController,
   createRevealStore,
+  isKeyboardOwner,
   isSmartZoomWheel,
   type RevealStore,
-  shouldIgnorePlaybackHotkey
+  wheelDeltaPx
 } from './interaction';
 import { drawScene, drawScramble } from './render';
 import { buildSimulation } from './simulation';
@@ -38,6 +40,9 @@ import type {
 // How long a full play-through sweep takes (ms), reveal 0 → 1. Longer = the
 // build-up breathes; the eased middle no longer rushes past in a blink.
 const SWEEP_MS = 15000;
+
+// Zoom increment for the buttons and shortcuts, relative to the resting fit (Excalidraw's 10%).
+const ZOOM_STEP = 0.1;
 
 // How far to relax the ease toward a flat linear march. The bare smoothstep
 // spikes to 1.5× linear speed mid-sweep, which reads as a "snap" through the
@@ -113,9 +118,12 @@ function RevealLabel({ axis, revealStore }: { axis: TimeAxis; revealStore: Revea
 // and pointer wiring; layout lives in simulation.ts and painting in render.ts.
 export function StarMap({
   graph,
+  highlightIds = null,
   onSelectNode
 }: {
   graph: StarmapGraph;
+  /** Stars to emphasise (the rest dim) while nothing is selected or hovered. */
+  highlightIds?: null | ReadonlySet<string>;
   onSelectNode?: (id: null | string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -148,6 +156,7 @@ export function StarMap({
   const hoveredRingRef = useRef<null | number>(null);
   const selectedRingRef = useRef<null | number>(null);
   const selectedIdRef = useRef<null | string>(null);
+  const highlightRef = useRef(highlightIds);
   const sizeRef = useRef({ h: 0, w: 0 });
   const dprRef = useRef(1);
   const dirtyRef = useRef(true);
@@ -156,6 +165,8 @@ export function StarMap({
   const snapMotionRef = useRef(false);
 
   const dragRef = useRef<{
+    // False for hand-style drags (Space held, middle button): releasing never selects.
+    click: boolean;
     id: null | string;
     mode: 'none' | 'pan';
     moved: boolean;
@@ -163,16 +174,31 @@ export function StarMap({
     sx: number;
     sy: number;
     vp: Viewport;
-  }>({ id: null, mode: 'none', moved: false, ring: null, sx: 0, sy: 0, vp: { k: 1, x: 0, y: 0 } });
+  }>({
+    click: false,
+    id: null,
+    mode: 'none',
+    moved: false,
+    ring: null,
+    sx: 0,
+    sy: 0,
+    vp: { k: 1, x: 0, y: 0 }
+  });
+  // Space held = temporary hand tool, as on the design canvas. A tap without a
+  // drag still toggles playback on release.
+  const spaceRef = useRef({ held: false, panned: false });
+  const pointerInsideRef = useRef(false);
+  const zoomLabelRef = useRef<HTMLButtonElement | null>(null);
 
   const [selectedId, setSelectedId] = useState<null | string>(null);
   const [size, setSize] = useState({ h: 0, w: 0 });
   // Changes on every theme switch so the legend swatch and the canvas palette
   // re-resolve against the new CSS custom properties.
   const themeEpoch = useTheme().resolvedTheme;
-  // Memory's swatch color — the same complementary-of-primary the canvas uses,
-  // so the legend matches the rendered diamonds exactly.
+  // Memory and concept swatch colors — the same hue rotations of the primary the
+  // canvas uses, so the legend matches the rendered diamonds and hexagons exactly.
   const [memoryColor, setMemoryColor] = useState('var(--theme-secondary)');
+  const [conceptColor, setConceptColor] = useState('var(--theme-accent)');
 
   // Time scrubber: reveal 1 = the whole map (idle default); lower values hide
   // not-yet-reached nodes so playing/scrubbing "builds it up". revealRef feeds
@@ -323,6 +349,12 @@ export function StarMap({
     onSelectNode?.(selectedId);
   }, [invalidate, onSelectNode, selectedId]);
 
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
+  useEffect(() => {
+    highlightRef.current = highlightIds;
+    invalidate();
+  }, [highlightIds, invalidate]);
+
   // A fresh graph resets the scrubber to "fully built" (the idle default).
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -447,26 +479,8 @@ export function StarMap({
     [fitForReveal, setRevealValue]
   );
 
-  // Spacebar toggles playback (unless typing, or the play button itself is
-  // focused — that already handles Space natively, so skip to avoid a double;
-  // same for focused context-menu items, which Radix renders as divs).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (shouldIgnorePlaybackHotkey(e, document.activeElement)) {
-        return;
-      }
-
-      e.preventDefault();
-      onTogglePlay();
-    };
-
-    window.addEventListener('keydown', onKey);
-
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onTogglePlay]);
-
-  // Recompute the legend's memory swatch from the live --theme-primary (matches
-  // the canvas), re-running on theme change and once the canvas is mounted.
+  // Recompute the legend's memory/concept swatches from the live --theme-primary
+  // (matches the canvas), re-running on theme change and once the canvas is mounted.
   useEffect(() => {
     const el = canvasRef.current ?? wrapRef.current;
 
@@ -483,7 +497,10 @@ export function StarMap({
         style.getPropertyValue('--dt-background').trim() ||
         '#000';
 
-      setMemoryColor(rgba(memoryInkFor(resolveRgb(val), resolveRgb(bgVal)), 0.9));
+      const primary = resolveRgb(val);
+      const bg = resolveRgb(bgVal);
+      setMemoryColor(rgba(memoryInkFor(primary, bg), 0.9));
+      setConceptColor(rgba(conceptInkFor(primary, bg), 0.9));
     }
   }, [size, themeEpoch]);
 
@@ -570,6 +587,7 @@ export function StarMap({
           dpr: dprRef.current,
           fades: fadeRef.current,
           focusId: selectedIdRef.current ?? hoverRef.current,
+          highlight: highlightRef.current,
           hoverId: hoverRef.current,
           hoverLink: hoveredLinkRef.current,
           hoverRing: hoveredRingRef.current,
@@ -590,6 +608,19 @@ export function StarMap({
         snapMotionRef.current = false;
         ringLabelRectsRef.current = ringLabelRects;
         dirtyRef.current = animating;
+
+        const zoomLabel = zoomLabelRef.current;
+        const { h, w } = sizeRef.current;
+
+        if (zoomLabel && w > 0 && h > 0) {
+          const rings = ringsRef.current;
+          const rest = fitViewport(w, h, rings[rings.length - 1]?.r ?? RING_OUTER).k;
+          const text = `${Math.round((viewportRef.current.k / rest) * 100)}%`;
+
+          if (zoomLabel.textContent !== text) {
+            zoomLabel.textContent = text;
+          }
+        }
       }
 
       // Composite order flips on focus/hover. Idle: scene first, sphere on top —
@@ -771,30 +802,96 @@ export function StarMap({
     return { x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) };
   };
 
-  const resetView = () => {
+  const idleDrag = (): typeof dragRef.current => ({
+    click: false,
+    id: null,
+    mode: 'none',
+    moved: false,
+    ring: null,
+    sx: 0,
+    sy: 0,
+    vp: viewportRef.current
+  });
+
+  const syncCursor = () => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    const drag = dragRef.current;
+    canvas.style.cursor =
+      drag.mode === 'pan' && drag.moved
+        ? 'grabbing'
+        : spaceRef.current.held
+          ? 'grab'
+          : hoverRef.current || hoveredRingRef.current != null
+            ? 'pointer'
+            : 'default';
+  };
+
+  // 100% is the resting fit (the whole disk in frame), not the raw scale.
+  const restingK = () =>
+    fitViewport(
+      sizeRef.current.w,
+      sizeRef.current.h,
+      ringsRef.current[ringsRef.current.length - 1]?.r ?? RING_OUTER
+    ).k;
+
+  // Zoom keeping the screen point (px, py) still; defaults to the canvas centre.
+  const zoomTo = (k: number, px = sizeRef.current.w / 2, py = sizeRef.current.h / 2) => {
+    setPlaying(false);
+    const vp = viewportRef.current;
+    const next = clamp(k, ZOOM_MIN, ZOOM_MAX);
+    viewportRef.current = {
+      k: next,
+      x: px - ((px - vp.x) / vp.k) * next,
+      y: py - ((py - vp.y) / vp.k) * next
+    };
+    invalidate();
+  };
+
+  const zoomStep = (direction: 1 | -1) => {
+    zoomTo(viewportRef.current.k + direction * ZOOM_STEP * restingK());
+  };
+
+  const fitAll = () => {
     setPlaying(false);
     viewportRef.current = fitViewport(
       sizeRef.current.w,
       sizeRef.current.h,
       ringsRef.current[ringsRef.current.length - 1]?.r ?? RING_OUTER
     );
-    selectedRingRef.current = null;
     invalidate();
+  };
+
+  const resetView = () => {
+    fitAll();
+    selectedRingRef.current = null;
     setSelectedId(null);
   };
 
   const onMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (e.button !== 0) {
+    // Middle button or Space + drag act as the hand tool; a plain drag pans too.
+    const hand = e.button === 1 || (e.button === 0 && spaceRef.current.held);
+
+    if (e.button !== 0 && !hand) {
       return;
     }
 
+    if (e.button === 1) {
+      e.preventDefault();
+    }
+
     const { x, y } = localXY(e);
-    const ringHit = pickRingLabel(x, y);
+    const ringHit = hand ? null : pickRingLabel(x, y);
     hoveredRingRef.current = null;
     // Nodes aren't draggable (static map) — remember which was pressed so a click
     // (press without movement) can select it; any drag just pans.
-    const nodeId = ringHit == null ? (pickNode(x, y)?.id ?? null) : null;
+    const nodeId = hand || ringHit != null ? null : (pickNode(x, y)?.id ?? null);
     dragRef.current = {
+      click: !hand,
       id: nodeId,
       mode: 'pan',
       moved: false,
@@ -810,10 +907,11 @@ export function StarMap({
 
     if (drag.mode === 'none') {
       const { x, y } = localXY(e);
-      const ringHit = pickRingLabel(x, y);
-      const id = ringHit == null ? (pickNode(x, y)?.id ?? null) : null;
+      const ringHit = spaceRef.current.held ? null : pickRingLabel(x, y);
+      const id = spaceRef.current.held || ringHit != null ? null : (pickNode(x, y)?.id ?? null);
       // Links are the last fallback (only when not over a node/date).
-      const linkKey = ringHit == null && id == null ? pickLink(x, y) : null;
+      const linkKey =
+        !spaceRef.current.held && ringHit == null && id == null ? pickLink(x, y) : null;
 
       if (
         id !== hoverRef.current ||
@@ -824,6 +922,7 @@ export function StarMap({
         hoveredRingRef.current = ringHit;
         hoveredLinkRef.current = linkKey;
         invalidate();
+        syncCursor();
       }
 
       return;
@@ -832,16 +931,19 @@ export function StarMap({
     const dx = e.clientX - drag.sx;
     const dy = e.clientY - drag.sy;
 
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+    if (!drag.moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
       drag.moved = true;
-    }
-
-    if (drag.mode === 'pan') {
       // Taking manual control of the camera ends an auto-fit play-through.
-      if (drag.moved) {
-        setPlaying(false);
+      setPlaying(false);
+
+      if (spaceRef.current.held) {
+        spaceRef.current.panned = true;
       }
 
+      syncCursor();
+    }
+
+    if (drag.moved) {
       viewportRef.current = { ...drag.vp, x: drag.vp.x + dx, y: drag.vp.y + dy };
       invalidate();
     }
@@ -851,19 +953,12 @@ export function StarMap({
     const drag = dragRef.current;
 
     // A click (press without movement) toggles a ring date, a node, or clears.
-    if (drag.mode === 'pan' && !drag.moved) {
+    if (drag.mode === 'pan' && !drag.moved && drag.click) {
       // Double tap (trackpad tap-to-click may never emit a dblclick) resets view.
       if (doubleTapRef.current()) {
         resetView();
-        dragRef.current = {
-          id: null,
-          mode: 'none',
-          moved: false,
-          ring: null,
-          sx: 0,
-          sy: 0,
-          vp: viewportRef.current
-        };
+        dragRef.current = idleDrag();
+        syncCursor();
 
         return;
       }
@@ -881,18 +976,12 @@ export function StarMap({
       invalidate();
     }
 
-    dragRef.current = {
-      id: null,
-      mode: 'none',
-      moved: false,
-      ring: null,
-      sx: 0,
-      sy: 0,
-      vp: viewportRef.current
-    };
+    dragRef.current = idleDrag();
+    syncCursor();
   };
 
   const onMouseLeave = () => {
+    pointerInsideRef.current = false;
     hoverRef.current = null;
     hoveredRingRef.current = null;
     hoveredLinkRef.current = null;
@@ -900,12 +989,16 @@ export function StarMap({
     endDrag();
   };
 
-  const onWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+  // Same wheel model as the design canvas: scroll / two-finger swipe pans
+  // (Shift turns a vertical wheel horizontal), ⌘/Ctrl + wheel and pinch zoom.
+  const onWheel = (e: WheelEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
 
     if (!rect) {
       return;
     }
+
+    e.preventDefault();
 
     // macOS smart zoom (two-finger double-tap) → reset (see lib/trackpad-gestures).
     if (isSmartZoomWheel(e)) {
@@ -914,16 +1007,137 @@ export function StarMap({
       return;
     }
 
-    // Manual zoom takes over the camera from any auto-fit play-through.
     setPlaying(false);
+    const { dx, dy } = wheelDeltaPx(e, rect.height);
 
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
+    if (e.ctrlKey || e.metaKey) {
+      // One zoom step at most per event, so a mouse notch and a pinch both feel even.
+      const step = clamp(dy, -ZOOM_STEP * 100, ZOOM_STEP * 100) / 100;
+      zoomTo(viewportRef.current.k * (1 - step), e.clientX - rect.left, e.clientY - rect.top);
+
+      return;
+    }
+
+    const [panX, panY] = e.shiftKey && dx === 0 ? [dy, 0] : [dx, dy];
     const vp = viewportRef.current;
-    const k = clamp(vp.k * (e.deltaY > 0 ? 0.9 : 1.1), ZOOM_MIN, ZOOM_MAX);
-    viewportRef.current = { k, x: px - ((px - vp.x) / vp.k) * k, y: py - ((py - vp.y) / vp.k) * k };
+    viewportRef.current = { ...vp, x: vp.x - panX, y: vp.y - panY };
     invalidate();
   };
+
+  // Safari reports trackpad pinches as gesture events instead of ⌘ + wheel.
+  const onPinch = (factor: number, clientX: number, clientY: number) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+
+    if (rect) {
+      zoomTo(viewportRef.current.k * factor, clientX - rect.left, clientY - rect.top);
+    }
+  };
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (isKeyboardOwner(document.activeElement)) {
+      return;
+    }
+
+    if (e.code === 'Space' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+
+      if (!spaceRef.current.held) {
+        spaceRef.current = { held: true, panned: false };
+        syncCursor();
+      }
+
+      return;
+    }
+
+    if (!pointerInsideRef.current) {
+      return;
+    }
+
+    const mod = e.metaKey || e.ctrlKey;
+
+    if (mod && (e.key === '=' || e.key === '+')) {
+      e.preventDefault();
+      zoomStep(1);
+    } else if (mod && e.key === '-') {
+      e.preventDefault();
+      zoomStep(-1);
+    } else if (mod && e.key === '0') {
+      e.preventDefault();
+      zoomTo(restingK());
+    } else if (e.shiftKey && !mod && e.code === 'Digit1') {
+      e.preventDefault();
+      fitAll();
+    }
+  };
+
+  const onKeyUp = (e: KeyboardEvent) => {
+    if (e.code !== 'Space' || !spaceRef.current.held) {
+      return;
+    }
+
+    const { panned } = spaceRef.current;
+    spaceRef.current = { held: false, panned: false };
+    syncCursor();
+
+    if (!panned) {
+      onTogglePlay();
+    }
+  };
+
+  const handlersRef = useRef({ onKeyDown, onKeyUp, onPinch, onWheel });
+
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
+  useEffect(() => {
+    handlersRef.current = { onKeyDown, onKeyUp, onPinch, onWheel };
+  });
+
+  // Native listeners: React's wheel handler is passive, so it can't stop ⌘/Ctrl +
+  // wheel or a pinch from zooming the whole page instead of the map.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) {
+      return;
+    }
+
+    let gestureScale = 1;
+    const onWheelEvent = (e: WheelEvent) => handlersRef.current.onWheel(e);
+    const onGestureStart = (e: Event) => {
+      e.preventDefault();
+      gestureScale = 1;
+    };
+    const onGestureChange = (e: Event) => {
+      e.preventDefault();
+      const { clientX, clientY, scale } = e as Event & {
+        clientX: number;
+        clientY: number;
+        scale: number;
+      };
+      handlersRef.current.onPinch(scale / gestureScale, clientX, clientY);
+      gestureScale = scale;
+    };
+    const onKeyDownEvent = (e: KeyboardEvent) => handlersRef.current.onKeyDown(e);
+    const onKeyUpEvent = (e: KeyboardEvent) => handlersRef.current.onKeyUp(e);
+    const onBlur = () => {
+      spaceRef.current = { held: false, panned: false };
+    };
+
+    canvas.addEventListener('wheel', onWheelEvent, { passive: false });
+    canvas.addEventListener('gesturestart', onGestureStart);
+    canvas.addEventListener('gesturechange', onGestureChange);
+    window.addEventListener('keydown', onKeyDownEvent);
+    window.addEventListener('keyup', onKeyUpEvent);
+    window.addEventListener('blur', onBlur);
+
+    return () => {
+      canvas.removeEventListener('wheel', onWheelEvent);
+      canvas.removeEventListener('gesturestart', onGestureStart);
+      canvas.removeEventListener('gesturechange', onGestureChange);
+      window.removeEventListener('keydown', onKeyDownEvent);
+      window.removeEventListener('keyup', onKeyUpEvent);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
 
   return (
     <div
@@ -935,16 +1149,39 @@ export function StarMap({
         className='block touch-none select-none text-foreground'
         onDoubleClick={resetView}
         onMouseDown={onMouseDown}
+        onMouseEnter={() => {
+          pointerInsideRef.current = true;
+        }}
         onMouseLeave={onMouseLeave}
         onMouseMove={onMouseMove}
         onMouseUp={endDrag}
-        onWheel={onWheel}
         ref={canvasRef}
       />
+
+      {/* Zoom controls styled like the design canvas's (Excalidraw) zoom pill. */}
+      <div className='bg-background/70 absolute bottom-3 left-3 z-20 flex items-center overflow-hidden rounded-[0.625rem] shadow-[0_0_0_1px_color-mix(in_oklab,var(--border)_70%,transparent)] backdrop-blur-[8px]'>
+        <ZoomButton label='Zoom out' onClick={() => zoomStep(-1)}>
+          <Icons.minus className='size-3.5' />
+        </ZoomButton>
+        <button
+          ref={zoomLabelRef}
+          type='button'
+          title='Reset zoom'
+          onPointerDown={(e) => e.preventDefault()}
+          onClick={() => zoomTo(restingK())}
+          className='text-muted-foreground hover:bg-accent/50 hover:text-foreground h-7.5 w-12 text-xs tabular-nums transition-colors'
+        >
+          100%
+        </button>
+        <ZoomButton label='Zoom in' onClick={() => zoomStep(1)}>
+          <Icons.add className='size-3.5' />
+        </ZoomButton>
+      </div>
 
       <div className='pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center px-12'>
         <Timeline
           axis={timeAxis}
+          conceptColor={conceptColor}
           memoryColor={memoryColor}
           onScrub={onScrub}
           onTogglePlay={onTogglePlay}
@@ -955,7 +1192,7 @@ export function StarMap({
       </div>
 
       {/* Legend — bottom-left, one entry per line like a conventional key. */}
-      <div className='pointer-events-none absolute bottom-2 left-2 flex flex-col gap-1 text-[0.62rem] text-muted-foreground'>
+      <div className='pointer-events-none absolute bottom-13 left-3 flex flex-col gap-1 text-[0.62rem] text-muted-foreground'>
         <span className='flex items-center gap-1.5'>
           <span className='inline-block size-2 rounded-full bg-[var(--theme-primary)]/80' /> skill
         </span>
@@ -966,11 +1203,41 @@ export function StarMap({
           />{' '}
           memory
         </span>
+        <span className='flex items-center gap-1.5'>
+          <span
+            className='inline-block size-2.5 [clip-path:polygon(50%_0,100%_25%,100%_75%,50%_100%,0_75%,0_25%)]'
+            style={{ backgroundColor: conceptColor }}
+          />{' '}
+          concept
+        </span>
         <span className='text-[0.58rem] text-muted-foreground/65'>
           core = oldest · outer = newer
         </span>
         <RevealLabel axis={timeAxis} revealStore={revealStore} />
       </div>
     </div>
+  );
+}
+
+function ZoomButton({
+  label,
+  onClick,
+  children
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type='button'
+      aria-label={label}
+      title={label}
+      onPointerDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      className='text-muted-foreground hover:bg-accent/50 hover:text-foreground flex size-7.5 items-center justify-center transition-colors'
+    >
+      {children}
+    </button>
   );
 }
